@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smooth Studio Display - Horizontal</title>
+<style>
+:root {
+  --bg: #000000;
+  --panel-gap: 10px;
+  --label-bg: rgba(0, 0, 0, 0.58);
+  --label-border: rgba(255, 255, 255, 0.12);
+  --label-text: #ffffff;
+  --label-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+body {
+  color: white;
+}
+
+#wall {
+  width: 100vw;
+  height: 100vh;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--panel-gap);
+  padding: var(--panel-gap);
+  background: #000;
+}
+
+.tile {
+  position: relative;
+  overflow: hidden;
+  background: #050505;
+  border-radius: 10px;
+  isolation: isolate;
+}
+
+.tile::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.25) 0%, rgba(0,0,0,0) 26%, rgba(0, 0, 0, 0.18) 100%);
+  z-index: 2;
+}
+
+.label {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  max-width: calc(100% - 36px);
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: var(--label-bg);
+  border: 1px solid var(--label-border);
+  color: var(--label-text);
+  font-weight: 700;
+  font-size: clamp(16px, 1.15vw, 24px);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  box-shadow: var(--label-shadow);
+  backdrop-filter: blur(8px);
+  pointer-events: none;
+}
+
+.frame,
+.player-shell,
+.tile iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.player-shell {
+  background: #000;
+}
+
+.player-shell.hidden {
+  display: none;
+}
+
+.tile[data-type="youtube"] iframe {
+  transform: scale(1.01);
+  transform-origin: center center;
+}
+
+.castr-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 4;
+  background: radial-gradient(circle at center, rgba(0, 0, 0, 0.16), rgba(0, 0, 0, 0.72));
+}
+
+.castr-overlay.hidden {
+  display: none;
+}
+
+.play-button {
+  appearance: none;
+  border: 1px solid rgba(255,255,255,0.22);
+  background: rgba(0, 0, 0, 0.56);
+  color: #fff;
+  padding: 14px 22px;
+  border-radius: 999px;
+  font-size: clamp(15px, 0.95vw, 18px);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+}
+
+.play-button:hover {
+  background: rgba(255,255,255,0.1);
+}
+
+.status-note {
+  position: absolute;
+  right: 18px;
+  bottom: 16px;
+  z-index: 4;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(0,0,0,0.45);
+  border: 1px solid rgba(255,255,255,0.08);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.84);
+  pointer-events: none;
+}
+
+@media (max-width: 1800px) {
+  #wall {
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+  }
+
+  .tile:nth-child(4) {
+    grid-column: 1 / span 2;
+  }
+
+  .tile:nth-child(5) {
+    grid-column: 3;
+  }
+}
+
+</style>
+</head>
+<body>
+<div id="wall">
+  <section class="tile" data-type="youtube" data-city="Melbourne">
+    <div class="label">Melbourne</div>
+    <iframe
+      class="frame"
+      src="https://www.youtube.com/embed/l_8DrACHpwY?autoplay=1&mute=1&controls=0&modestbranding=1&playsinline=1&rel=0"
+      allow="autoplay; encrypted-media; picture-in-picture"
+      referrerpolicy="strict-origin-when-cross-origin"
+      title="Melbourne live feed"
+    ></iframe>
+  </section>
+
+  <section class="tile" data-type="youtube" data-city="Sydney">
+    <div class="label">Sydney</div>
+    <iframe
+      class="frame"
+      src="https://www.youtube.com/embed/5uZa3-RMFos?autoplay=1&mute=1&controls=0&modestbranding=1&playsinline=1&rel=0"
+      allow="autoplay; encrypted-media; picture-in-picture"
+      referrerpolicy="strict-origin-when-cross-origin"
+      title="Sydney live feed"
+    ></iframe>
+  </section>
+
+  <section class="tile" data-type="youtube" data-city="Brisbane">
+    <div class="label">Brisbane</div>
+    <iframe
+      class="frame"
+      src="https://www.youtube.com/embed/7xTmCQf4NIo?autoplay=1&mute=1&controls=0&modestbranding=1&playsinline=1&rel=0"
+      allow="autoplay; encrypted-media; picture-in-picture"
+      referrerpolicy="strict-origin-when-cross-origin"
+      title="Brisbane live feed"
+    ></iframe>
+  </section>
+
+  <section class="tile" data-type="castr" data-city="Adelaide">
+    <div class="label">Adelaide</div>
+    <iframe
+      id="adelaide-frame"
+      class="frame"
+      src="https://player.castr.com/live_67de07a0017d11f1be7e5b649faa3b0a"
+      allow="autoplay; fullscreen"
+      referrerpolicy="strict-origin-when-cross-origin"
+      title="Adelaide live feed"
+    ></iframe>
+    <div class="castr-overlay" id="adelaide-overlay">
+      <button class="play-button" id="adelaide-play" type="button">Start Adelaide Feed</button>
+    </div>
+    <div class="status-note">Interactive feed</div>
+  </section>
+
+  <section class="tile" data-type="youtube" data-city="Perth">
+    <div class="label">Perth</div>
+    <iframe
+      class="frame"
+      src="https://www.youtube.com/embed/uakxJIafWcw?autoplay=1&mute=1&controls=0&modestbranding=1&playsinline=1&rel=0"
+      allow="autoplay; encrypted-media; picture-in-picture"
+      referrerpolicy="strict-origin-when-cross-origin"
+      title="Perth live feed"
+    ></iframe>
+  </section>
+</div>
+
+<script>
+  const playButton = document.getElementById('adelaide-play');
+  const overlay = document.getElementById('adelaide-overlay');
+  const adelaideFrame = document.getElementById('adelaide-frame');
+
+  function restartAdelaideFeed() {
+    const src = adelaideFrame.src;
+    adelaideFrame.src = src;
+    overlay.classList.add('hidden');
+  }
+
+  playButton?.addEventListener('click', restartAdelaideFeed);
+</script>
+</body>
+</html>
