@@ -103,56 +103,6 @@ body {
   transform-origin: center center;
 }
 
-.castr-overlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 4;
-  background: radial-gradient(circle at center, rgba(0, 0, 0, 0.16), rgba(0, 0, 0, 0.72));
-}
-
-.castr-overlay.hidden {
-  display: none;
-}
-
-.play-button {
-  appearance: none;
-  border: 1px solid rgba(255,255,255,0.22);
-  background: rgba(0, 0, 0, 0.56);
-  color: #fff;
-  padding: 14px 22px;
-  border-radius: 999px;
-  font-size: clamp(15px, 0.95vw, 18px);
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  cursor: pointer;
-  backdrop-filter: blur(8px);
-  box-shadow: 0 10px 30px rgba(0,0,0,0.35);
-}
-
-.play-button:hover {
-  background: rgba(255,255,255,0.1);
-}
-
-.status-note {
-  position: absolute;
-  right: 18px;
-  bottom: 16px;
-  z-index: 4;
-  padding: 6px 10px;
-  border-radius: 999px;
-  background: rgba(0,0,0,0.45);
-  border: 1px solid rgba(255,255,255,0.08);
-  font-size: 11px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: rgba(255,255,255,0.84);
-  pointer-events: none;
-}
-
 @media (max-width: 1800px) {
   #wall {
     grid-template-columns: repeat(3, 1fr);
@@ -205,20 +155,15 @@ body {
     ></iframe>
   </section>
 
-  <section class="tile" data-type="castr" data-city="Adelaide">
+  <section class="tile" data-type="ipcamlive" data-city="Adelaide">
     <div class="label">Adelaide</div>
     <iframe
-      id="adelaide-frame"
       class="frame"
-      src="https://player.castr.com/live_67de07a0017d11f1be7e5b649faa3b0a"
+      src="https://www.ipcamlive.com/player/player.php?alias=bsyc1080&autoplay=1&&token=81olYx9YTuJRnUATn8P7RZVNP4asF1TfeUw1zRNr1uo%3D"
       allow="autoplay; fullscreen"
       referrerpolicy="strict-origin-when-cross-origin"
       title="Adelaide live feed"
     ></iframe>
-    <div class="castr-overlay" id="adelaide-overlay">
-      <button class="play-button" id="adelaide-play" type="button">Start Adelaide Feed</button>
-    </div>
-    <div class="status-note">Interactive feed</div>
   </section>
 
   <section class="tile" data-type="youtube" data-city="Perth">
@@ -233,18 +178,5 @@ body {
   </section>
 </div>
 
-<script>
-  const playButton = document.getElementById('adelaide-play');
-  const overlay = document.getElementById('adelaide-overlay');
-  const adelaideFrame = document.getElementById('adelaide-frame');
-
-  function restartAdelaideFeed() {
-    const src = adelaideFrame.src;
-    adelaideFrame.src = src;
-    overlay.classList.add('hidden');
-  }
-
-  playButton?.addEventListener('click', restartAdelaideFeed);
-</script>
 </body>
 </html>
