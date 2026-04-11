@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Smooth Studio Display - Horizontal</title>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <style>
 :root {
   --bg: #000000;
@@ -95,6 +96,7 @@ body {
   background: #000;
 }
 
+.hidden,
 .player-shell.hidden {
   display: none;
 }
@@ -147,15 +149,25 @@ body {
     ></iframe>
   </section>
 
-  <section class="tile" data-type="ipcamlive" data-city="Adelaide">
+  <section class="tile" data-type="hls" data-city="Adelaide">
     <div class="label">Adelaide</div>
-    <iframe
-      class="frame"
-      src="https://www.ipcamlive.com/player/player.php?alias=bsyc1080&autoplay=1&&token=81olYx9YTuJRnUATn8P7RZVNP4asF1TfeUw1zRNr1uo%3D"
-      allow="autoplay; fullscreen"
-      referrerpolicy="strict-origin-when-cross-origin"
-      title="Adelaide live feed"
-    ></iframe>
+    <div class="frame adelaide-shell">
+      <video
+        id="adelaide-video"
+        class="frame"
+        autoplay
+        muted
+        playsinline
+        preload="auto"
+        title="Adelaide live feed"
+      ></video>
+      <img
+        id="adelaide-fallback"
+        class="frame player-shell hidden"
+        src="https://s127.ipcamlive.com/streams/7fgpebct52eb1kyid/snapshot.jpg"
+        alt="Adelaide live snapshot"
+      />
+    </div>
   </section>
 
   <section class="tile" data-type="youtube" data-city="Perth">
@@ -170,5 +182,62 @@ body {
   </section>
 </div>
 
+<script>
+const adelaideStreamUrl = 'https://s127.ipcamlive.com/streams/7fgpebct52eb1kyid/stream.m3u8';
+const adelaideSnapshotUrl = 'https://s127.ipcamlive.com/streams/7fgpebct52eb1kyid/snapshot.jpg';
+
+const adelaideVideo = document.getElementById('adelaide-video');
+const adelaideFallback = document.getElementById('adelaide-fallback');
+let adelaideFallbackTimerStarted = false;
+
+function showAdelaideFallback() {
+  if (!adelaideFallback || !adelaideVideo) return;
+  adelaideFallback.src = `${adelaideSnapshotUrl}?t=${Date.now()}`;
+  adelaideFallback.classList.remove('hidden');
+  adelaideVideo.classList.add('hidden');
+}
+
+function startAdelaideFallbackRefresh() {
+  showAdelaideFallback();
+
+  if (adelaideFallbackTimerStarted) return;
+  adelaideFallbackTimerStarted = true;
+
+  window.setInterval(() => {
+    adelaideFallback.src = `${adelaideSnapshotUrl}?t=${Date.now()}`;
+  }, 30000);
+}
+
+if (adelaideVideo) {
+  adelaideVideo.muted = true;
+  adelaideVideo.playsInline = true;
+
+  if (adelaideVideo.canPlayType('application/vnd.apple.mpegurl')) {
+    adelaideVideo.src = adelaideStreamUrl;
+    adelaideVideo.play().catch(startAdelaideFallbackRefresh);
+  } else if (window.Hls && Hls.isSupported()) {
+    const hls = new Hls({
+      maxLiveSyncPlaybackRate: 1.5,
+      liveDurationInfinity: true,
+      enableWorker: true,
+    });
+
+    hls.loadSource(adelaideStreamUrl);
+    hls.attachMedia(adelaideVideo);
+    hls.on(Hls.Events.MANIFEST_PARSED, () => {
+      adelaideVideo.play().catch(startAdelaideFallbackRefresh);
+    });
+    hls.on(Hls.Events.ERROR, (_, data) => {
+      if (data?.fatal) {
+        startAdelaideFallbackRefresh();
+      }
+    });
+  } else {
+    startAdelaideFallbackRefresh();
+  }
+
+  adelaideVideo.addEventListener('error', startAdelaideFallbackRefresh);
+}
+</script>
 </body>
 </html>
