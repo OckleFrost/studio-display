@@ -99,9 +99,9 @@
       switchCheckMs: 15000,
       showStatusOverlay: true,
       schedules: [
-        { days: [1, 2, 3, 4, 5], start: '15:00', end: '15:22', mode: 'onAir' },
-        { days: [1, 2, 3, 4, 5], start: '15:22', end: '15:25', mode: 'offAir' },
-        { days: [1, 2, 3, 4, 5], start: '15:25', end: '23:59', mode: 'onAir' },
+        { days: [1, 2, 3, 4, 5], start: '15:00', end: '15:29', mode: 'onAir' },
+        { days: [1, 2, 3, 4, 5], start: '15:29', end: '15:31', mode: 'offAir' },
+        { days: [1, 2, 3, 4, 5], start: '15:31', end: '23:59', mode: 'onAir' },
         { days: [1, 2, 3, 4, 5], start: '00:00', end: '03:00', mode: 'onAir' }
       ],
       layouts: {
@@ -136,8 +136,6 @@
     const statusEl = document.getElementById('status');
     const statusModeEl = document.getElementById('status-mode');
     const statusDetailEl = document.getElementById('status-detail');
-    const statusBuildEl = document.getElementById('status-build');
-    const BUILD_STAMP = 'build 2026-04-14 15:20 multi-window-test';
 
     function getSydneyParts() {
       const formatter = new Intl.DateTimeFormat('en-AU', {
@@ -182,9 +180,8 @@
 
       const { time } = getSydneyParts();
       statusModeEl.textContent = layout.label;
-      const windowText = CONFIG.schedules.map(entry => `${entry.start}-${entry.end}`).join(', ');
-      statusDetailEl.textContent = `${layout.detail}, Sydney time ${time}, window ${windowText}`;
-      statusBuildEl.textContent = BUILD_STAMP;
+      const windowText = CONFIG.schedules.map(entry => `${entry.mode === 'onAir' ? 'H' : 'V'} ${entry.start}-${entry.end}`).join(' | ');
+      statusDetailEl.textContent = `${layout.detail}, Sydney time ${time}, schedule ${windowText}`;
       statusEl.classList.remove('hidden');
     }
 
