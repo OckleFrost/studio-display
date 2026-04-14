@@ -4,6 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Studio Display - Timed</title>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <style>
     :root {
       --bg: #000;
@@ -130,6 +133,8 @@
     const statusEl = document.getElementById('status');
     const statusModeEl = document.getElementById('status-mode');
     const statusDetailEl = document.getElementById('status-detail');
+    const statusBuildEl = document.getElementById('status-build');
+    const BUILD_STAMP = 'build 2026-04-14 15:18 test-window';
 
     function getSydneyParts() {
       const formatter = new Intl.DateTimeFormat('en-AU', {
@@ -174,7 +179,9 @@
 
       const { time } = getSydneyParts();
       statusModeEl.textContent = layout.label;
-      statusDetailEl.textContent = `${layout.detail}, Sydney time ${time}`;
+      const windowText = CONFIG.schedules.map(entry => `${entry.start}-${entry.end}`).join(', ');
+      statusDetailEl.textContent = `${layout.detail}, Sydney time ${time}, window ${windowText}`;
+      statusBuildEl.textContent = BUILD_STAMP;
       statusEl.classList.remove('hidden');
     }
 
