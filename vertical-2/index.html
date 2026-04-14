@@ -5,12 +5,18 @@
 <title>Studio Display - Vertical 2</title>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <style>
+:root {
+  --bg: #000;
+  --pad: 8px;
+  --gap: 8px;
+}
+
 html, body {
   margin: 0;
   padding: 0;
   width: 100vw;
   height: 100vh;
-  background: black;
+  background: var(--bg);
   overflow: hidden;
   font-family: Arial, Helvetica, sans-serif;
 }
@@ -19,7 +25,7 @@ html, body {
   width: 100%;
   height: 100%;
   position: relative;
-  background: black;
+  background: var(--bg);
   overflow: hidden;
 }
 
@@ -29,34 +35,43 @@ html, body {
   left: 0;
   width: 100vh;
   height: 100vw;
-  display: flex;
-  flex-direction: column;
-  background: black;
+  padding: var(--pad);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1.18fr 1.18fr 1.18fr 0.9fr;
+  gap: var(--gap);
+  background: var(--bg);
   transform-origin: top left;
   transform: rotate(-90deg) translateX(-100%);
 }
 
 .stream {
   position: relative;
-  flex: 1;
   overflow: hidden;
   background: #000;
 }
 
+.stream.sydney { grid-column: 1 / span 2; grid-row: 1; }
+.stream.melbourne { grid-column: 1 / span 2; grid-row: 2; }
+.stream.brisbane { grid-column: 1 / span 2; grid-row: 3; }
+.stream.adelaide { grid-column: 1; grid-row: 4; }
+.stream.perth { grid-column: 2; grid-row: 4; }
+
 .label {
   position: absolute;
-  top: 28px;
-  left: 2px;
+  top: 18px;
+  left: 14px;
   z-index: 10;
   font-weight: 700;
-  font-size: clamp(16px, 1.9vw, 28px);
-  letter-spacing: 3px;
+  font-size: clamp(14px, 1.55vw, 24px);
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: white;
-  background: rgba(0, 0, 0, 0.6);
-  padding: 10px 18px;
-  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.62);
+  padding: 10px 16px;
+  border-radius: 999px;
   backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   pointer-events: none;
 }
 
@@ -84,28 +99,28 @@ html, body {
 <div id="container">
   <div id="stage">
 
-    <div class="stream">
+    <div class="stream sydney">
       <div class="label">Sydney</div>
       <iframe src="https://www.youtube.com/embed/5uZa3-RMFos?autoplay=1&mute=1&controls=0&modestbranding=1" allow="autoplay"></iframe>
     </div>
 
-    <div class="stream">
+    <div class="stream melbourne">
       <div class="label">Melbourne</div>
       <iframe src="https://www.youtube.com/embed/l_8DrACHpwY?autoplay=1&mute=1&controls=0&modestbranding=1" allow="autoplay"></iframe>
     </div>
 
-    <div class="stream">
+    <div class="stream brisbane">
       <div class="label">Brisbane</div>
       <iframe src="https://www.youtube.com/embed/xVTqTwPLhOU?si=0kVt1WaG5LSfaEXE&autoplay=1&mute=1&controls=0&modestbranding=1" allow="autoplay"></iframe>
     </div>
 
-    <div class="stream">
+    <div class="stream adelaide">
       <div class="label">Adelaide</div>
       <video id="adelaide-video" autoplay muted playsinline preload="auto" title="Adelaide live feed"></video>
       <img id="adelaide-fallback" class="hidden" src="https://s127.ipcamlive.com/streams/7fgpebct52eb1kyid/snapshot.jpg" alt="Adelaide live snapshot" />
     </div>
 
-    <div class="stream">
+    <div class="stream perth">
       <div class="label">Perth</div>
       <iframe src="https://www.youtube.com/embed/uakxJIafWcw?autoplay=1&mute=1&controls=0&modestbranding=1" allow="autoplay"></iframe>
     </div>
