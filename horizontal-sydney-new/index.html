@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Studio Display - Horizontal</title>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<style>
+:root {
+  --bg: #000;
+  --pad: 8px;
+  --gap: 8px;
+  --label-bg: rgba(0, 0, 0, 0.68);
+  --label-border: rgba(255, 255, 255, 0.16);
+  --label-text: #fff;
+  --label-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+}
+
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  font-family: Arial, Helvetica, sans-serif;
+}
+body { color: #fff; }
+
+#wall {
+  width: 100vw;
+  height: 100vh;
+  padding: var(--pad);
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: var(--gap);
+  background: #000;
+}
+
+.tile {
+  position: relative;
+  overflow: hidden;
+  background: #050505;
+  isolation: isolate;
+}
+
+.tile::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.06) 0%, rgba(0,0,0,0) 18%, rgba(0,0,0,0.12) 100%);
+  z-index: 2;
+}
+
+.tile.hero {
+  grid-column: 1 / span 2;
+  grid-row: 1 / span 2;
+}
+
+.tile.perth { grid-column: 3; grid-row: 1; }
+.tile.adelaide { grid-column: 3; grid-row: 2; }
+.tile.melbourne { grid-column: 1; grid-row: 3; }
+.tile.brisbane { grid-column: 2; grid-row: 3; }
+.tile.earth { grid-column: 3; grid-row: 3; }
+
+.label {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 4;
+  display: inline-flex;
+  align-items: center;
+  max-width: calc(100% - 28px);
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: var(--label-bg);
+  border: 1px solid var(--label-border);
+  color: var(--label-text);
+  font-weight: 800;
+  font-size: clamp(14px, 0.95vw, 21px);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  line-height: 1;
+  box-shadow: var(--label-shadow);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  pointer-events: none;
+}
+
+.tile.hero .label {
+  top: 18px;
+  left: 18px;
+  padding: 12px 18px;
+  font-size: clamp(16px, 1.05vw, 24px);
+}
+
+.frame,
+.tile iframe,
+.tile video,
+.tile img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.hidden { display: none; }
+.tile iframe { width: 100%; height: 100%; }
+
+.tile.hero iframe,
+.tile.melbourne iframe,
+.tile.brisbane iframe,
+.tile.perth iframe {
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+}
+
+.tile.adelaide video,
+.tile.adelaide img {
+  object-fit: contain;
+  object-position: center center;
+  background: #000;
+}
+</style>
+</head>
+<body>
+<div id="wall">
+  <section class="tile hero sydney" data-type="youtube" data-city="Sydney">
+    <div class="label">Sydney</div>
+    <iframe class="frame" src="https://www.youtube.com/embed/6Xxb5uikewE?autoplay=1&mute=1&controls=0&modestbranding=1&playsinline=1&rel=0" allow="autoplay; encrypted-media; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin" title="Sydney live feed"></iframe>
+  </section>
+
+  <section class="tile perth" data-type="youtube" data-city="Perth">
+    <div class="label">Perth</div>
+    <iframe class="frame" src="https://www.youtube.com/embed/uakxJIafWcw?autoplay=1&mute=1&controls=0&modestbranding=1&playsinline=1&rel=0" allow="autoplay; encrypted-media; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin" title="Perth live feed"></iframe>
+  </section>
+
+  <section class="tile adelaide" data-type="hls" data-city="Adelaide">
+    <div class="label">Adelaide</div>
+    <video id="adelaide-video" class="frame" autoplay muted playsinline preload="auto" title="Adelaide live feed"></video>
+    <img id="adelaide-fallback" class="frame hidden" src="https://s127.ipcamlive.com/streams/7fgpebct52eb1kyid/snapshot.jpg" alt="Adelaide live snapshot" />
+  </section>
+
+  <section class="tile melbourne" data-type="youtube" data-city="Melbourne">
+    <div class="label">Melbourne</div>
+    <iframe class="frame" src="https://www.youtube.com/embed/l_8DrACHpwY?autoplay=1&mute=1&controls=0&modestbranding=1&playsinline=1&rel=0" allow="autoplay; encrypted-media; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin" title="Melbourne live feed"></iframe>
+  </section>
+
+  <section class="tile brisbane" data-type="youtube" data-city="Brisbane">
+    <div class="label">Brisbane</div>
+    <iframe class="frame" src="https://www.youtube.com/embed/xVTqTwPLhOU?si=0kVt1WaG5LSfaEXE&autoplay=1&mute=1&controls=0&modestbranding=1&playsinline=1&rel=0" allow="autoplay; encrypted-media; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin" title="Brisbane live feed"></iframe>
+  </section>
+
+  <section class="tile earth" data-type="youtube" data-city="Earth">
+    <div class="label">Earth</div>
+    <iframe class="frame" src="https://www.youtube.com/embed/fO9e9jnhYK8?autoplay=1&mute=1&controls=0&modestbranding=1&playsinline=1&rel=0" allow="autoplay; encrypted-media; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin" title="Earth live feed"></iframe>
+  </section>
+</div>
+
+<script>
+const adelaideStreamUrl = 'https://s127.ipcamlive.com/streams/7fgpebct52eb1kyid/stream.m3u8';
+const adelaideSnapshotUrl = 'https://s127.ipcamlive.com/streams/7fgpebct52eb1kyid/snapshot.jpg';
+const adelaideVideo = document.getElementById('adelaide-video');
+const adelaideFallback = document.getElementById('adelaide-fallback');
+let adelaideFallbackTimerStarted = false;
+
+function showAdelaideFallback() {
+  if (!adelaideFallback || !adelaideVideo) return;
+  adelaideFallback.src = `${adelaideSnapshotUrl}?t=${Date.now()}`;
+  adelaideFallback.classList.remove('hidden');
+  adelaideVideo.classList.add('hidden');
+}
+
+function startAdelaideFallbackRefresh() {
+  showAdelaideFallback();
+  if (adelaideFallbackTimerStarted) return;
+  adelaideFallbackTimerStarted = true;
+  window.setInterval(() => {
+    adelaideFallback.src = `${adelaideSnapshotUrl}?t=${Date.now()}`;
+  }, 30000);
+}
+
+if (adelaideVideo) {
+  adelaideVideo.muted = true;
+  adelaideVideo.playsInline = true;
+
+  if (adelaideVideo.canPlayType('application/vnd.apple.mpegurl')) {
+    adelaideVideo.src = adelaideStreamUrl;
+    adelaideVideo.play().catch(startAdelaideFallbackRefresh);
+  } else if (window.Hls && Hls.isSupported()) {
+    const hls = new Hls({ maxLiveSyncPlaybackRate: 1.5, liveDurationInfinity: true, enableWorker: true });
+    hls.loadSource(adelaideStreamUrl);
+    hls.attachMedia(adelaideVideo);
+    hls.on(Hls.Events.MANIFEST_PARSED, () => {
+      adelaideVideo.play().catch(startAdelaideFallbackRefresh);
+    });
+    hls.on(Hls.Events.ERROR, (_, data) => {
+      if (data?.fatal) startAdelaideFallbackRefresh();
+    });
+  } else {
+    startAdelaideFallbackRefresh();
+  }
+
+  adelaideVideo.addEventListener('error', startAdelaideFallbackRefresh);
+}
+</script>
+</body>
+</html>
