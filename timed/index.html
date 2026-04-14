@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Studio Display - Timed</title>
+  <style>
+    :root {
+      --bg: #000;
+      --overlay-bg: rgba(0, 0, 0, 0.62);
+      --overlay-border: rgba(255, 255, 255, 0.16);
+      --overlay-text: #fff;
+      --shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+      --transition-ms: 900ms;
+    }
+
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+      font-family: Arial, Helvetica, sans-serif;
+      color: var(--overlay-text);
+    }
+
+    body { position: relative; }
+
+    .layout {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border: 0;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: opacity var(--transition-ms) ease, visibility var(--transition-ms) ease;
+      background: #000;
+    }
+
+    .layout.active {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+    }
+
+    .status {
+      position: absolute;
+      right: 14px;
+      bottom: 14px;
+      z-index: 20;
+      display: inline-flex;
+      flex-direction: column;
+      gap: 4px;
+      max-width: min(42vw, 480px);
+      padding: 10px 14px;
+      border-radius: 14px;
+      background: var(--overlay-bg);
+      border: 1px solid var(--overlay-border);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      user-select: none;
+    }
+
+    .status strong {
+      font-size: clamp(12px, 1vw, 14px);
+      line-height: 1.2;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+
+    .status span {
+      font-size: clamp(11px, 0.92vw, 13px);
+      line-height: 1.35;
+      opacity: 0.88;
+    }
+
+    .status.hidden { display: none; }
+  </style>
+</head>
+<body>
+  <iframe id="layout-onair" class="layout" src="../horizontal/" title="Studio Display on air layout" loading="eager"></iframe>
+  <iframe id="layout-offair" class="layout" src="../vertical-2/" title="Studio Display off air layout" loading="eager"></iframe>
+
+  <div id="status" class="status">
+    <strong id="status-mode">Loading…</strong>
+    <span id="status-detail">Checking schedule</span>
+  </div>
+
+  <script>
+    const CONFIG = {
+      timeZone: 'Australia/Sydney',
+      switchCheckMs: 15000,
+      showStatusOverlay: true,
+      schedules: [
+        { days: [1, 2, 3, 4, 5], start: '09:00', end: '13:00', mode: 'onAir' }
+      ],
+      layouts: {
+        onAir: {
+          label: 'On air',
+          detail: 'Horizontal wall',
+          elementId: 'layout-onair'
+        },
+        offAir: {
+          label: 'Off air',
+          detail: 'Vertical 2 wall',
+          elementId: 'layout-offair'
+        }
+      }
+    };
+
+    const dayMap = {
+      Sun: 0,
+      Mon: 1,
+      Tue: 2,
+      Wed: 3,
+      Thu: 4,
+      Fri: 5,
+      Sat: 6
+    };
+
+    const activeEls = {
+      onAir: document.getElementById(CONFIG.layouts.onAir.elementId),
+      offAir: document.getElementById(CONFIG.layouts.offAir.elementId)
+    };
+
+    const statusEl = document.getElementById('status');
+    const statusModeEl = document.getElementById('status-mode');
+    const statusDetailEl = document.getElementById('status-detail');
+
+    function getSydneyParts() {
+      const formatter = new Intl.DateTimeFormat('en-AU', {
+        timeZone: CONFIG.timeZone,
+        weekday: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      });
+
+      const parts = formatter.formatToParts(new Date());
+      const values = Object.fromEntries(parts.filter(part => part.type !== 'literal').map(part => [part.type, part.value]));
+      return {
+        day: dayMap[values.weekday],
+        time: `${values.hour}:${values.minute}`
+      };
+    }
+
+    function inWindow(now, start, end) {
+      if (start === end) return true;
+      if (start < end) return now >= start && now < end;
+      return now >= start || now < end;
+    }
+
+    function pickMode() {
+      const { day, time } = getSydneyParts();
+      const match = CONFIG.schedules.find(entry => entry.days.includes(day) && inWindow(time, entry.start, entry.end));
+      return match?.mode || 'offAir';
+    }
+
+    function setActiveMode(mode) {
+      Object.entries(activeEls).forEach(([key, el]) => {
+        if (!el) return;
+        el.classList.toggle('active', key === mode);
+      });
+
+      const layout = CONFIG.layouts[mode];
+      if (!CONFIG.showStatusOverlay) {
+        statusEl.classList.add('hidden');
+        return;
+      }
+
+      const { time } = getSydneyParts();
+      statusModeEl.textContent = layout.label;
+      statusDetailEl.textContent = `${layout.detail}, Sydney time ${time}`;
+      statusEl.classList.remove('hidden');
+    }
+
+    function refreshMode() {
+      setActiveMode(pickMode());
+    }
+
+    refreshMode();
+    window.setInterval(refreshMode, CONFIG.switchCheckMs);
+  </script>
+</body>
+</html>
