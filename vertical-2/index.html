@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Studio Display - Vertical 2</title>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<style>
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100vw;
+  height: 100vh;
+  background: black;
+  overflow: hidden;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+#container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  background: black;
+  overflow: hidden;
+}
+
+#stage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vh;
+  height: 100vw;
+  display: flex;
+  flex-direction: column;
+  background: black;
+  transform-origin: top left;
+  transform: rotate(-90deg) translateX(-100%);
+}
+
+.stream {
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+  background: #000;
+}
+
+.label {
+  position: absolute;
+  top: 28px;
+  left: 2px;
+  z-index: 10;
+  font-weight: 700;
+  font-size: clamp(16px, 1.9vw, 28px);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: white;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 10px 18px;
+  border-radius: 6px;
+  backdrop-filter: blur(6px);
+  pointer-events: none;
+}
+
+.stream iframe,
+.stream video,
+.stream img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.stream video,
+.stream img {
+  object-fit: contain;
+  object-position: center center;
+  background: #000;
+}
+
+.hidden { display: none; }
+</style>
+</head>
+<body>
+<div id="container">
+  <div id="stage">
+
+    <div class="stream">
+      <div class="label">Sydney</div>
+      <iframe src="https://www.youtube.com/embed/5uZa3-RMFos?autoplay=1&mute=1&controls=0&modestbranding=1" allow="autoplay"></iframe>
+    </div>
+
+    <div class="stream">
+      <div class="label">Melbourne</div>
+      <iframe src="https://www.youtube.com/embed/l_8DrACHpwY?autoplay=1&mute=1&controls=0&modestbranding=1" allow="autoplay"></iframe>
+    </div>
+
+    <div class="stream">
+      <div class="label">Brisbane</div>
+      <iframe src="https://www.youtube.com/embed/xVTqTwPLhOU?si=0kVt1WaG5LSfaEXE&autoplay=1&mute=1&controls=0&modestbranding=1" allow="autoplay"></iframe>
+    </div>
+
+    <div class="stream">
+      <div class="label">Adelaide</div>
+      <video id="adelaide-video" autoplay muted playsinline preload="auto" title="Adelaide live feed"></video>
+      <img id="adelaide-fallback" class="hidden" src="https://s127.ipcamlive.com/streams/7fgpebct52eb1kyid/snapshot.jpg" alt="Adelaide live snapshot" />
+    </div>
+
+    <div class="stream">
+      <div class="label">Perth</div>
+      <iframe src="https://www.youtube.com/embed/uakxJIafWcw?autoplay=1&mute=1&controls=0&modestbranding=1" allow="autoplay"></iframe>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const adelaideStreamUrl = 'https://s127.ipcamlive.com/streams/7fgpebct52eb1kyid/stream.m3u8';
+const adelaideSnapshotUrl = 'https://s127.ipcamlive.com/streams/7fgpebct52eb1kyid/snapshot.jpg';
+const adelaideVideo = document.getElementById('adelaide-video');
+const adelaideFallback = document.getElementById('adelaide-fallback');
+let adelaideFallbackTimerStarted = false;
+
+function showAdelaideFallback() {
+  if (!adelaideFallback || !adelaideVideo) return;
+  adelaideFallback.src = `${adelaideSnapshotUrl}?t=${Date.now()}`;
+  adelaideFallback.classList.remove('hidden');
+  adelaideVideo.classList.add('hidden');
+}
+
+function startAdelaideFallbackRefresh() {
+  showAdelaideFallback();
+  if (adelaideFallbackTimerStarted) return;
+  adelaideFallbackTimerStarted = true;
+  window.setInterval(() => {
+    adelaideFallback.src = `${adelaideSnapshotUrl}?t=${Date.now()}`;
+  }, 30000);
+}
+
+if (adelaideVideo) {
+  adelaideVideo.muted = true;
+  adelaideVideo.playsInline = true;
+
+  if (adelaideVideo.canPlayType('application/vnd.apple.mpegurl')) {
+    adelaideVideo.src = adelaideStreamUrl;
+    adelaideVideo.play().catch(startAdelaideFallbackRefresh);
+  } else if (window.Hls && Hls.isSupported()) {
+    const hls = new Hls({ maxLiveSyncPlaybackRate: 1.5, liveDurationInfinity: true, enableWorker: true });
+    hls.loadSource(adelaideStreamUrl);
+    hls.attachMedia(adelaideVideo);
+    hls.on(Hls.Events.MANIFEST_PARSED, () => {
+      adelaideVideo.play().catch(startAdelaideFallbackRefresh);
+    });
+    hls.on(Hls.Events.ERROR, (_, data) => {
+      if (data?.fatal) startAdelaideFallbackRefresh();
+    });
+  } else {
+    startAdelaideFallbackRefresh();
+  }
+
+  adelaideVideo.addEventListener('error', startAdelaideFallbackRefresh);
+}
+</script>
+</body>
+</html>
