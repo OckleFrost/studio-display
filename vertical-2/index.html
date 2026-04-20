@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <title>Studio Display - Vertical 2</title>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<script src="../assets/adelaide-feed.js"></script>
 <style>
 :root {
   --bg: #000;
@@ -142,51 +143,15 @@ html, body {
 </div>
 
 <script>
-const adelaideStreamUrl = 'https://s127.ipcamlive.com/streams/7fudnys3tyrokz1cx/stream.m3u8';
-const adelaideSnapshotUrl = 'https://s127.ipcamlive.com/streams/7fudnys3tyrokz1cx/snapshot.jpg';
-const adelaideVideo = document.getElementById('adelaide-video');
-const adelaideFallback = document.getElementById('adelaide-fallback');
-let adelaideFallbackTimerStarted = false;
-
-function showAdelaideFallback() {
-  if (!adelaideFallback || !adelaideVideo) return;
-  adelaideFallback.src = `${adelaideSnapshotUrl}?t=${Date.now()}`;
-  adelaideFallback.classList.remove('hidden');
-  adelaideVideo.classList.add('hidden');
-}
-
-function startAdelaideFallbackRefresh() {
-  showAdelaideFallback();
-  if (adelaideFallbackTimerStarted) return;
-  adelaideFallbackTimerStarted = true;
-  window.setInterval(() => {
-    adelaideFallback.src = `${adelaideSnapshotUrl}?t=${Date.now()}`;
-  }, 30000);
-}
-
-if (adelaideVideo) {
-  adelaideVideo.muted = true;
-  adelaideVideo.playsInline = true;
-
-  if (adelaideVideo.canPlayType('application/vnd.apple.mpegurl')) {
-    adelaideVideo.src = adelaideStreamUrl;
-    adelaideVideo.play().catch(startAdelaideFallbackRefresh);
-  } else if (window.Hls && Hls.isSupported()) {
-    const hls = new Hls({ maxLiveSyncPlaybackRate: 1.5, liveDurationInfinity: true, enableWorker: true });
-    hls.loadSource(adelaideStreamUrl);
-    hls.attachMedia(adelaideVideo);
-    hls.on(Hls.Events.MANIFEST_PARSED, () => {
-      adelaideVideo.play().catch(startAdelaideFallbackRefresh);
-    });
-    hls.on(Hls.Events.ERROR, (_, data) => {
-      if (data?.fatal) startAdelaideFallbackRefresh();
-    });
-  } else {
-    startAdelaideFallbackRefresh();
-  }
-
-  adelaideVideo.addEventListener('error', startAdelaideFallbackRefresh);
-}
+initAdelaideFeed({
+  videoId: 'adelaide-video',
+  fallbackId: 'adelaide-fallback',
+  feedUrl: '../feeds/adelaide.json',
+  initialStreamId: '7fudnys3tyrokz1cx',
+  initialStreamUrl: 'https://s127.ipcamlive.com/streams/7fudnys3tyrokz1cx/stream.m3u8',
+  initialSnapshotUrl: 'https://s127.ipcamlive.com/streams/7fudnys3tyrokz1cx/snapshot.jpg',
+  scheduledChecksSydney: ['06:55', '13:55']
+});
 </script>
 </body>
 </html>
