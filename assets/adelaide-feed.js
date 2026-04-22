@@ -60,6 +60,9 @@
       feedUrl: '../feeds/adelaide.json',
       fallbackRefreshMs: 30000,
       scheduledChecksSydney: ['06:55', '13:55'],
+      watchdogCheckMs: 15000,
+      watchdogStallMs: 45000,
+      minRecoveryGapMs: 20000,
       videoId: 'adelaide-video',
       fallbackId: 'adelaide-fallback'
     }, options || {});
@@ -76,7 +79,12 @@
       hls: null,
       fallbackIntervalId: null,
       scheduledRefreshTimeoutId: null,
-      refreshPromise: null
+      watchdogIntervalId: null,
+      refreshPromise: null,
+      lastProgressAt: Date.now(),
+      lastCurrentTime: 0,
+      lastPlaybackStartAt: 0,
+      lastRecoveryAt: 0
     };
 
     function stopHls() {
@@ -90,6 +98,21 @@
       if (!state.fallbackIntervalId) return;
       global.clearInterval(state.fallbackIntervalId);
       state.fallbackIntervalId = null;
+    }
+
+    function stopWatchdog() {
+      if (!state.watchdogIntervalId) return;
+      global.clearInterval(state.watchdogIntervalId);
+      state.watchdogIntervalId = null;
+    }
+
+    function noteProgress(force) {
+      const now = Date.now();
+      const currentTime = Number(video.currentTime || 0);
+      if (force || currentTime > state.lastCurrentTime + 0.01) {
+        state.lastCurrentTime = currentTime;
+        state.lastProgressAt = now;
+      }
     }
 
     function showFallback() {
@@ -161,7 +184,23 @@
       return state.refreshPromise;
     }
 
+    function recoverPlayback() {
+      const now = Date.now();
+      if (now - state.lastRecoveryAt < config.minRecoveryGapMs) return;
+      state.lastRecoveryAt = now;
+      refreshFeed({ restartPlayer: true }).then((changed) => {
+        if (!changed) startPlayback();
+      });
+    }
+
     function handlePlaybackFailure() {
+      const now = Date.now();
+      if (now - state.lastRecoveryAt < config.minRecoveryGapMs) {
+        startFallbackRefresh();
+        return;
+      }
+
+      state.lastRecoveryAt = now;
       refreshFeed({ restartPlayer: true }).then((changed) => {
         if (!changed) startFallbackRefresh();
       });
@@ -171,6 +210,9 @@
       stopFallbackRefresh();
       stopHls();
       hideFallback();
+      state.lastPlaybackStartAt = Date.now();
+      state.lastProgressAt = state.lastPlaybackStartAt;
+      state.lastCurrentTime = 0;
 
       video.pause();
       video.removeAttribute('src');
@@ -201,6 +243,39 @@
       startFallbackRefresh();
     }
 
+    function startWatchdog() {
+      stopWatchdog();
+      state.watchdogIntervalId = global.setInterval(() => {
+        const now = Date.now();
+
+        if (!fallback.classList.contains('hidden')) {
+          if (now - state.lastRecoveryAt >= config.watchdogStallMs) {
+            recoverPlayback();
+          }
+          return;
+        }
+
+        const currentTime = Number(video.currentTime || 0);
+        if (currentTime > state.lastCurrentTime + 0.01) {
+          noteProgress(false);
+          return;
+        }
+
+        const startupAge = now - state.lastPlaybackStartAt;
+        const stalledFor = now - state.lastProgressAt;
+        const appearsActive = !video.paused && !video.ended;
+
+        if (appearsActive && startupAge >= config.watchdogStallMs && stalledFor >= config.watchdogStallMs) {
+          recoverPlayback();
+          return;
+        }
+
+        if (video.readyState < 2 && startupAge >= config.watchdogStallMs) {
+          recoverPlayback();
+        }
+      }, config.watchdogCheckMs);
+    }
+
     function scheduleNextTimedRefresh() {
       if (state.scheduledRefreshTimeoutId) {
         global.clearTimeout(state.scheduledRefreshTimeoutId);
@@ -214,9 +289,16 @@
     }
 
     video.addEventListener('error', handlePlaybackFailure);
+    ['loadeddata', 'loadedmetadata', 'canplay', 'canplaythrough', 'playing', 'timeupdate', 'progress', 'seeked'].forEach((eventName) => {
+      video.addEventListener(eventName, () => noteProgress(true));
+    });
+    ['stalled', 'suspend', 'waiting', 'ended'].forEach((eventName) => {
+      video.addEventListener(eventName, handlePlaybackFailure);
+    });
     startPlayback();
     refreshFeed();
     scheduleNextTimedRefresh();
+    startWatchdog();
 
     const exportedState = {
       refreshFeed,
