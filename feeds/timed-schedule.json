@@ -1,0 +1,24 @@
+{
+  "timeZone": "Australia/Sydney",
+  "switchCheckMs": 15000,
+  "configPollMs": 30000,
+  "showStatusOverlay": false,
+  "schedules": [
+    { "days": [1, 2, 3, 4, 5], "start": "07:30", "end": "13:01", "mode": "onAir" },
+    { "days": [6], "start": "07:30", "end": "23:59", "mode": "onAir" },
+    { "days": [0], "start": "00:00", "end": "23:59", "mode": "onAir" },
+    { "days": [1], "start": "00:00", "end": "13:01", "mode": "onAir" }
+  ],
+  "layouts": {
+    "onAir": {
+      "label": "On air",
+      "detail": "Horizontal wall",
+      "elementId": "layout-onair"
+    },
+    "offAir": {
+      "label": "Off air",
+      "detail": "Vertical 2 wall",
+      "elementId": "layout-offair"
+    }
+  }
+}

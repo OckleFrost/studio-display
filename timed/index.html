@@ -94,10 +94,12 @@
   </div>
 
   <script>
-    const CONFIG = {
+    const DEFAULT_CONFIG = {
       timeZone: 'Australia/Sydney',
       switchCheckMs: 15000,
+      configPollMs: 30000,
       showStatusOverlay: false,
+      scheduleUrl: '../feeds/timed-schedule.json',
       schedules: [
         { days: [1, 2, 3, 4, 5], start: '07:30', end: '13:01', mode: 'onAir' },
         { days: [6], start: '07:30', end: '23:59', mode: 'onAir' },
@@ -118,6 +120,9 @@
       }
     };
 
+    let runtimeConfig = structuredClone(DEFAULT_CONFIG);
+    let lastAppliedScheduleHash = '';
+
     const dayMap = {
       Sun: 0,
       Mon: 1,
@@ -129,17 +134,39 @@
     };
 
     const activeEls = {
-      onAir: document.getElementById(CONFIG.layouts.onAir.elementId),
-      offAir: document.getElementById(CONFIG.layouts.offAir.elementId)
+      onAir: document.getElementById(DEFAULT_CONFIG.layouts.onAir.elementId),
+      offAir: document.getElementById(DEFAULT_CONFIG.layouts.offAir.elementId)
     };
 
     const statusEl = document.getElementById('status');
     const statusModeEl = document.getElementById('status-mode');
     const statusDetailEl = document.getElementById('status-detail');
 
+    function mergeConfig(base, incoming) {
+      if (!incoming || typeof incoming !== 'object') return structuredClone(base);
+      return {
+        ...base,
+        ...incoming,
+        layouts: {
+          ...base.layouts,
+          ...(incoming.layouts || {})
+        },
+        schedules: Array.isArray(incoming.schedules) ? incoming.schedules : base.schedules
+      };
+    }
+
+    function getScheduleHash(config) {
+      return JSON.stringify({
+        timeZone: config.timeZone,
+        showStatusOverlay: config.showStatusOverlay,
+        schedules: config.schedules,
+        layouts: config.layouts
+      });
+    }
+
     function getSydneyParts() {
       const formatter = new Intl.DateTimeFormat('en-AU', {
-        timeZone: CONFIG.timeZone,
+        timeZone: runtimeConfig.timeZone,
         weekday: 'short',
         hour: '2-digit',
         minute: '2-digit',
@@ -162,7 +189,7 @@
 
     function pickMode() {
       const { day, time } = getSydneyParts();
-      const match = CONFIG.schedules.find(entry => entry.days.includes(day) && inWindow(time, entry.start, entry.end));
+      const match = runtimeConfig.schedules.find(entry => entry.days.includes(day) && inWindow(time, entry.start, entry.end));
       return match?.mode || 'offAir';
     }
 
@@ -172,15 +199,15 @@
         el.classList.toggle('active', key === mode);
       });
 
-      const layout = CONFIG.layouts[mode];
-      if (!CONFIG.showStatusOverlay) {
+      const layout = runtimeConfig.layouts[mode];
+      if (!runtimeConfig.showStatusOverlay) {
         statusEl.classList.add('hidden');
         return;
       }
 
       const { time } = getSydneyParts();
       statusModeEl.textContent = layout.label;
-      const windowText = CONFIG.schedules.map(entry => `${entry.mode === 'onAir' ? 'H' : 'V'} ${entry.start}-${entry.end}`).join(' | ');
+      const windowText = runtimeConfig.schedules.map(entry => `${entry.mode === 'onAir' ? 'H' : 'V'} ${entry.start}-${entry.end}`).join(' | ');
       statusDetailEl.textContent = `${layout.detail}, Sydney time ${time}, schedule ${windowText}`;
       statusEl.classList.remove('hidden');
     }
@@ -189,8 +216,49 @@
       setActiveMode(pickMode());
     }
 
-    refreshMode();
-    window.setInterval(refreshMode, CONFIG.switchCheckMs);
+    function applyConfig(nextConfig) {
+      runtimeConfig = mergeConfig(DEFAULT_CONFIG, nextConfig);
+      const scheduleHash = getScheduleHash(runtimeConfig);
+      if (scheduleHash !== lastAppliedScheduleHash) {
+        lastAppliedScheduleHash = scheduleHash;
+      }
+      refreshMode();
+    }
+
+    async function loadRemoteConfig() {
+      const url = new URL(runtimeConfig.scheduleUrl || DEFAULT_CONFIG.scheduleUrl, window.location.href);
+      url.searchParams.set('_', String(Date.now()));
+
+      const response = await fetch(url.toString(), {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Schedule fetch failed (${response.status})`);
+      }
+
+      const remoteConfig = await response.json();
+      applyConfig(remoteConfig);
+    }
+
+    function startPolling() {
+      window.setInterval(refreshMode, runtimeConfig.switchCheckMs || DEFAULT_CONFIG.switchCheckMs);
+      window.setInterval(() => {
+        loadRemoteConfig().catch(() => {
+          // Keep the current schedule if the remote file is briefly unavailable.
+        });
+      }, runtimeConfig.configPollMs || DEFAULT_CONFIG.configPollMs);
+    }
+
+    applyConfig(DEFAULT_CONFIG);
+    loadRemoteConfig().catch(() => {
+      // Fall back to the baked-in default schedule on first load.
+    }).finally(() => {
+      startPolling();
+    });
   </script>
 </body>
 </html>
