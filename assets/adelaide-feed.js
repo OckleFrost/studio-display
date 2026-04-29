@@ -112,6 +112,11 @@
       if (force || currentTime > state.lastCurrentTime + 0.01) {
         state.lastCurrentTime = currentTime;
         state.lastProgressAt = now;
+
+        if (!fallback.classList.contains('hidden') && video.readyState >= 2 && !video.paused && !video.ended) {
+          stopFallbackRefresh();
+          hideFallback();
+        }
       }
     }
 
@@ -292,7 +297,7 @@
     ['loadeddata', 'loadedmetadata', 'canplay', 'canplaythrough', 'playing', 'timeupdate', 'progress', 'seeked'].forEach((eventName) => {
       video.addEventListener(eventName, () => noteProgress(true));
     });
-    ['stalled', 'suspend', 'waiting', 'ended'].forEach((eventName) => {
+    ['stalled', 'waiting', 'ended'].forEach((eventName) => {
       video.addEventListener(eventName, handlePlaybackFailure);
     });
     startPlayback();
