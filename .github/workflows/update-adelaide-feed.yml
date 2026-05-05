@@ -38,7 +38,9 @@ jobs:
 
           stream_id = payload.get('details', {}).get('streamid')
           if not stream_id:
-              raise SystemExit('IPCamLive payload did not include details.streamid')
+              print('NO_STREAM_ID', json.dumps(payload, ensure_ascii=False))
+              print('Keeping existing feeds/adelaide.json and exiting without failure.')
+              raise SystemExit(0)
 
           feed = {
               'alias': alias,
