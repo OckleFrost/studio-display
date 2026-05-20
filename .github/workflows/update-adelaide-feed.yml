@@ -27,7 +27,7 @@ jobs:
           from pathlib import Path
 
           alias = 'bsyc1080'
-          image_fallback_url = 'https://s3.ap-southeast-2.amazonaws.com/dmzweb.adelaidecitycouncil.com/webcam/images/RundleArt.jpg'
+          offline_fallback_url = '/studio-display/assets/adelaide-offline.svg'
           endpoint = 'https://www.ipcamlive.com/ajax/getcamerastreamstate.php?'
           url = endpoint + urllib.parse.urlencode({'cameraalias': alias})
           req = urllib.request.Request(url, headers={
@@ -46,8 +46,8 @@ jobs:
                   'streamid': None,
                   'streamavailable': payload.get('details', {}).get('streamavailable'),
                   'status': 'upstream_unavailable',
-                  'image_url': image_fallback_url,
-                  'snapshot_url': image_fallback_url
+                  'image_url': offline_fallback_url,
+                  'snapshot_url': offline_fallback_url
               }
           else:
               feed = {

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">Adelaide feed offline</title>
+  <desc id="desc">Neutral offline placeholder for the Adelaide BSYC feed.</desc>
+  <rect width="1280" height="720" fill="#080a0d"/>
+  <rect x="1" y="1" width="1278" height="718" fill="none" stroke="#202833" stroke-width="2"/>
+  <g font-family="Inter, Arial, sans-serif" fill="#f4f7fb" text-anchor="middle">
+    <text x="640" y="318" font-size="44" font-weight="700" letter-spacing="0">ADELAIDE</text>
+    <text x="640" y="374" font-size="28" fill="#aeb8c4" letter-spacing="0">BSYC IPCamLive feed offline</text>
+    <text x="640" y="420" font-size="20" fill="#788696" letter-spacing="0">Waiting for upstream stream ID</text>
+  </g>
+</svg>
