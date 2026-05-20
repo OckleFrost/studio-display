@@ -42,16 +42,31 @@
   function normaliseFeed(feed) {
     if (!feed || typeof feed !== 'object') return null;
 
+    const kind = feed.kind || feed.type || (feed.image_url || feed.imageUrl ? 'image' : 'hls');
+    const imageUrl = feed.image_url || feed.imageUrl;
     const streamUrl = feed.stream_url || feed.streamUrl;
     const snapshotUrl = feed.snapshot_url || feed.snapshotUrl;
     const streamId = feed.streamid || feed.streamId;
 
+    if (kind === 'image') {
+      if (!imageUrl && !snapshotUrl) return null;
+      return {
+        kind: 'image',
+        streamId: streamId || null,
+        streamUrl: null,
+        snapshotUrl: imageUrl || snapshotUrl,
+        imageUrl: imageUrl || snapshotUrl
+      };
+    }
+
     if (!streamUrl || !snapshotUrl) return null;
 
     return {
+      kind: 'hls',
       streamId: streamId || null,
       streamUrl,
-      snapshotUrl
+      snapshotUrl,
+      imageUrl: null
     };
   }
 
@@ -73,9 +88,11 @@
     if (!video || !fallback) return null;
 
     const state = {
+      currentKind: config.initialKind || 'hls',
       currentStreamId: config.initialStreamId || null,
       currentStreamUrl: config.initialStreamUrl,
       currentSnapshotUrl: config.initialSnapshotUrl,
+      currentImageUrl: config.initialImageUrl || null,
       hls: null,
       fallbackIntervalId: null,
       scheduledRefreshTimeoutId: null,
@@ -141,14 +158,18 @@
 
     function applyFeed(feed, restartPlayer) {
       const changed = Boolean(
+        feed.kind !== state.currentKind ||
         feed.streamId !== state.currentStreamId ||
         feed.streamUrl !== state.currentStreamUrl ||
-        feed.snapshotUrl !== state.currentSnapshotUrl
+        feed.snapshotUrl !== state.currentSnapshotUrl ||
+        feed.imageUrl !== state.currentImageUrl
       );
 
+      state.currentKind = feed.kind;
       state.currentStreamId = feed.streamId;
       state.currentStreamUrl = feed.streamUrl;
       state.currentSnapshotUrl = feed.snapshotUrl;
+      state.currentImageUrl = feed.imageUrl;
       fallback.src = state.currentSnapshotUrl;
 
       if (changed || restartPlayer) {
@@ -224,6 +245,11 @@
       video.load();
       video.muted = true;
       video.playsInline = true;
+
+      if (state.currentKind === 'image') {
+        startFallbackRefresh();
+        return;
+      }
 
       if (video.canPlayType('application/vnd.apple.mpegurl')) {
         video.src = state.currentStreamUrl;
@@ -308,9 +334,11 @@
     const exportedState = {
       refreshFeed,
       getState: () => ({
+        kind: state.currentKind,
         streamId: state.currentStreamId,
         streamUrl: state.currentStreamUrl,
-        snapshotUrl: state.currentSnapshotUrl
+        snapshotUrl: state.currentSnapshotUrl,
+        imageUrl: state.currentImageUrl
       })
     };
 

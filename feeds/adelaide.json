@@ -1,6 +1,9 @@
 {
   "alias": "bsyc1080",
-  "streamid": "7ff1yv028pqwg5ynb",
-  "stream_url": "https://s127.ipcamlive.com/streams/7ff1yv028pqwg5ynb/stream.m3u8",
-  "snapshot_url": "https://s127.ipcamlive.com/streams/7ff1yv028pqwg5ynb/snapshot.jpg"
+  "kind": "image",
+  "streamid": null,
+  "streamavailable": "0",
+  "status": "upstream_unavailable",
+  "image_url": "https://s3.ap-southeast-2.amazonaws.com/dmzweb.adelaidecitycouncil.com/webcam/images/RundleArt.jpg",
+  "snapshot_url": "https://s3.ap-southeast-2.amazonaws.com/dmzweb.adelaidecitycouncil.com/webcam/images/RundleArt.jpg"
 }
