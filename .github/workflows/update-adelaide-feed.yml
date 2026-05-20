@@ -35,6 +35,7 @@ jobs:
 
           alias = 'bsyc1080'
           city_webcam_url = 'https://www.cityofadelaide.com.au/webcams/town-hall-south/'
+          city_hls_url = 'https://stream.castr.com/6747e375d1a99d0e8db51bb0/live_67de07a0017d11f1be7e5b649faa3b0a/index.m3u8'
           fallback_image_path = Path('assets/adelaide-fallback.jpg')
           fallback_image_url = '/studio-display/assets/adelaide-fallback.jpg'
           offline_fallback_url = '/studio-display/assets/adelaide-offline.svg'
@@ -50,17 +51,6 @@ jobs:
                   return response.read().decode('utf-8', errors='replace')
 
           def capture_city_fallback():
-              page_html = fetch_text(city_webcam_url)
-              iframe_match = re.search(r"""<iframe[^>]+src=["']?(https://player\.castr\.com/[^"'\s>]+)""", page_html)
-              if not iframe_match:
-                  raise RuntimeError('City webcam Castr iframe not found')
-
-              player_url = iframe_match.group(1)
-              player_html = fetch_text(player_url, city_webcam_url)
-              stream_match = re.search(r'window\\.__streamUrl\\s*=\\s*"([^"]+)"', player_html)
-              if not stream_match:
-                  raise RuntimeError('City webcam HLS URL not found')
-
               fallback_image_path.parent.mkdir(parents=True, exist_ok=True)
               subprocess.run([
                   'ffmpeg',
@@ -68,7 +58,7 @@ jobs:
                   '-loglevel', 'warning',
                   '-y',
                   '-headers', 'Referer: https://player.castr.com/\\r\\nOrigin: https://player.castr.com\\r\\nUser-Agent: Mozilla/5.0\\r\\n',
-                  '-i', stream_match.group(1),
+                  '-i', city_hls_url,
                   '-frames:v', '1',
                   '-q:v', '3',
                   '-update', '1',
