@@ -59,6 +59,7 @@ jobs:
                   '-y',
                   '-headers', 'Referer: https://player.castr.com/\\r\\nOrigin: https://player.castr.com\\r\\nUser-Agent: Mozilla/5.0\\r\\n',
                   '-i', city_hls_url,
+                  '-vf', 'select=gte(n\\,2)',
                   '-frames:v', '1',
                   '-q:v', '3',
                   '-update', '1',
@@ -120,7 +121,7 @@ jobs:
 
       - name: Commit feed update
         run: |
-          if git diff --quiet -- feeds/adelaide.json; then
+          if git diff --quiet -- feeds/adelaide.json assets/adelaide-fallback.jpg; then
             exit 0
           fi
           stream_id=$(python3 - <<'PY'
