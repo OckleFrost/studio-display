@@ -85,8 +85,8 @@
   </style>
 </head>
 <body>
-  <iframe id="layout-onair" class="layout" src="../horizontal/" title="Studio Display on air layout" loading="eager"></iframe>
-  <iframe id="layout-offair" class="layout" src="../vertical-2/" title="Studio Display off air layout" loading="eager"></iframe>
+  <iframe id="layout-onair" class="layout" data-src="../horizontal/" title="Studio Display on air layout" loading="eager"></iframe>
+  <iframe id="layout-offair" class="layout" data-src="../vertical-2/" title="Studio Display off air layout" loading="eager"></iframe>
 
   <div id="status" class="status">
     <strong id="status-mode">Loading…</strong>
@@ -136,6 +136,17 @@
       onAir: document.getElementById(DEFAULT_CONFIG.layouts.onAir.elementId),
       offAir: document.getElementById(DEFAULT_CONFIG.layouts.offAir.elementId)
     };
+
+    const pageVersion = new URLSearchParams(window.location.search).get('v');
+
+    function applyLayoutSrcVersions() {
+      Object.values(activeEls).forEach((frame) => {
+        if (!frame || frame.src) return;
+        const url = new URL(frame.dataset.src, window.location.href);
+        if (pageVersion) url.searchParams.set('v', pageVersion);
+        frame.src = url.toString();
+      });
+    }
 
     const statusEl = document.getElementById('status');
     const statusModeEl = document.getElementById('status-mode');
@@ -252,6 +263,7 @@
       }, runtimeConfig.configPollMs || DEFAULT_CONFIG.configPollMs);
     }
 
+    applyLayoutSrcVersions();
     applyConfig(DEFAULT_CONFIG);
     loadRemoteConfig().catch(() => {
       // Fall back to the baked-in default schedule on first load.
