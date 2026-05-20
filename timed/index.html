@@ -137,7 +137,8 @@
       offAir: document.getElementById(DEFAULT_CONFIG.layouts.offAir.elementId)
     };
 
-    const pageVersion = new URLSearchParams(window.location.search).get('v');
+    const BUILD_VERSION = '20260520-townhallfallback';
+    const pageVersion = new URLSearchParams(window.location.search).get('v') || BUILD_VERSION;
 
     function applyLayoutSrcVersions() {
       Object.values(activeEls).forEach((frame) => {
