@@ -51,7 +51,7 @@ jobs:
 
           def capture_city_fallback():
               page_html = fetch_text(city_webcam_url)
-              iframe_match = re.search(r'<iframe[^>]+src=["\\']?(https://player\\.castr\\.com/[^"\\'\\s>]+)', page_html)
+              iframe_match = re.search(r"""<iframe[^>]+src=["']?(https://player\.castr\.com/[^"'\s>]+)""", page_html)
               if not iframe_match:
                   raise RuntimeError('City webcam Castr iframe not found')
 
