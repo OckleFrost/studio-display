@@ -78,6 +78,7 @@
       watchdogCheckMs: 15000,
       watchdogStallMs: 45000,
       minRecoveryGapMs: 20000,
+      emergencyImageUrl: '../assets/adelaide-fallback.jpg',
       videoId: 'adelaide-video',
       fallbackId: 'adelaide-fallback'
     }, options || {});
@@ -93,6 +94,7 @@
       currentStreamUrl: config.initialStreamUrl,
       currentSnapshotUrl: config.initialSnapshotUrl,
       currentImageUrl: config.initialImageUrl || null,
+      snapshotFailed: false,
       hls: null,
       fallbackIntervalId: null,
       scheduledRefreshTimeoutId: null,
@@ -137,8 +139,17 @@
       }
     }
 
+    function fallbackUrl() {
+      return state.snapshotFailed ? config.emergencyImageUrl : (state.currentSnapshotUrl || config.emergencyImageUrl);
+    }
+
+    function cacheBust(url) {
+      const separator = String(url).includes('?') ? '&' : '?';
+      return `${url}${separator}t=${Date.now()}`;
+    }
+
     function showFallback() {
-      fallback.src = `${state.currentSnapshotUrl}?t=${Date.now()}`;
+      fallback.src = cacheBust(fallbackUrl());
       fallback.classList.remove('hidden');
       video.classList.add('hidden');
     }
@@ -152,7 +163,7 @@
       showFallback();
       if (state.fallbackIntervalId) return;
       state.fallbackIntervalId = global.setInterval(() => {
-        fallback.src = `${state.currentSnapshotUrl}?t=${Date.now()}`;
+        fallback.src = cacheBust(fallbackUrl());
       }, config.fallbackRefreshMs);
     }
 
@@ -170,6 +181,7 @@
       state.currentStreamUrl = feed.streamUrl;
       state.currentSnapshotUrl = feed.snapshotUrl;
       state.currentImageUrl = feed.imageUrl;
+      state.snapshotFailed = false;
       fallback.src = state.currentSnapshotUrl;
 
       if (changed || restartPlayer) {
@@ -320,6 +332,11 @@
     }
 
     video.addEventListener('error', handlePlaybackFailure);
+    fallback.addEventListener('error', () => {
+      if (state.snapshotFailed || !config.emergencyImageUrl) return;
+      state.snapshotFailed = true;
+      fallback.src = cacheBust(config.emergencyImageUrl);
+    });
     ['loadeddata', 'loadedmetadata', 'canplay', 'canplaythrough', 'playing', 'timeupdate', 'progress', 'seeked'].forEach((eventName) => {
       video.addEventListener(eventName, () => noteProgress(true));
     });
