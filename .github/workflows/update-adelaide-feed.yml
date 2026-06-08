@@ -27,8 +27,12 @@ jobs:
         run: |
           python3 - <<'PY'
           import json
+          import os
           import re
+          import socket
           import subprocess
+          import sys
+          import urllib.error
           import urllib.parse
           import urllib.request
           from pathlib import Path
@@ -41,6 +45,55 @@ jobs:
           offline_fallback_url = '/studio-display/assets/adelaide-offline.svg'
           endpoint = 'https://www.ipcamlive.com/ajax/getcamerastreamstate.php?'
           url = endpoint + urllib.parse.urlencode({'cameraalias': alias})
+          path = Path('feeds/adelaide.json')
+
+          def warn(stage, operation, impact, evidence, resolution):
+              message = (
+                  f'SUCCESS_WITH_WARNINGS: stage={stage}; operation={operation}; '
+                  f'impact={impact}; evidence={evidence}; resolution={resolution}'
+              )
+              print(message)
+              print(f'::warning title=Adelaide feed degraded::{message}')
+              summary_path = os.environ.get('GITHUB_STEP_SUMMARY')
+              if summary_path:
+                  with open(summary_path, 'a', encoding='utf-8') as summary:
+                      summary.write('## SUCCESS_WITH_WARNINGS\n')
+                      summary.write(f'- stage: {stage}\n')
+                      summary.write(f'- operation: {operation}\n')
+                      summary.write(f'- impact: {impact}\n')
+                      summary.write(f'- evidence: {evidence}\n')
+                      summary.write(f'- resolution: {resolution}\n')
+
+          def keep_existing_feed(reason):
+              if path.exists():
+                  existing = json.loads(path.read_text(encoding='utf-8'))
+                  warn(
+                      'Resolve current IPCamLive stream',
+                      'fetch alias endpoint',
+                      'kept existing Adelaide feed so the display continues with the last published live/fallback source',
+                      reason,
+                      'retry on the next scheduled workflow run'
+                  )
+                  print('NO_CHANGE', json.dumps(existing, ensure_ascii=False))
+                  sys.exit(0)
+
+              warn(
+                  'Resolve current IPCamLive stream',
+                  'fetch alias endpoint',
+                  'no existing Adelaide feed was available, so wrote the built-in offline fallback',
+                  reason,
+                  'retry on the next scheduled workflow run'
+              )
+              return {
+                  'alias': alias,
+                  'kind': 'image',
+                  'streamid': None,
+                  'streamavailable': None,
+                  'status': 'alias_fetch_failed',
+                  'image_url': offline_fallback_url,
+                  'snapshot_url': offline_fallback_url,
+                  'fallback_source': None
+              }
 
           def fetch_text(fetch_url, referer=None):
               headers = {'User-Agent': 'Mozilla/5.0 (OpenClaw studio-display GitHub Action)'}
@@ -75,40 +128,47 @@ jobs:
               'User-Agent': 'Mozilla/5.0 (OpenClaw studio-display GitHub Action)',
               'Referer': 'https://www.ipcamlive.com/'
           })
-          with urllib.request.urlopen(req, timeout=20) as response:
-              payload = json.loads(response.read().decode('utf-8', errors='replace'))
+          payload = None
+          feed = None
+          try:
+              with urllib.request.urlopen(req, timeout=20) as response:
+                  payload = json.loads(response.read().decode('utf-8', errors='replace'))
+          except (TimeoutError, socket.timeout, urllib.error.URLError) as exc:
+              feed = keep_existing_feed(repr(exc))
+          except json.JSONDecodeError as exc:
+              feed = keep_existing_feed(f'invalid JSON from IPCamLive: {exc}')
 
-          stream_id = payload.get('details', {}).get('streamid')
-          if not stream_id:
-              print('NO_STREAM_ID', json.dumps(payload, ensure_ascii=False))
-              try:
-                  image_url = capture_city_fallback()
-                  fallback_status = 'upstream_unavailable_city_screenshot'
-              except Exception as exc:
-                  print('CITY_FALLBACK_FAILED', repr(exc))
-                  image_url = offline_fallback_url
-                  fallback_status = 'upstream_unavailable'
+          if payload is not None:
+              stream_id = payload.get('details', {}).get('streamid')
+              if not stream_id:
+                  print('NO_STREAM_ID', json.dumps(payload, ensure_ascii=False))
+                  try:
+                      image_url = capture_city_fallback()
+                      fallback_status = 'upstream_unavailable_city_screenshot'
+                  except Exception as exc:
+                      print('CITY_FALLBACK_FAILED', repr(exc))
+                      image_url = offline_fallback_url
+                      fallback_status = 'upstream_unavailable'
 
-              feed = {
-                  'alias': alias,
-                  'kind': 'image',
-                  'streamid': None,
-                  'streamavailable': payload.get('details', {}).get('streamavailable'),
-                  'status': fallback_status,
-                  'image_url': image_url,
-                  'snapshot_url': image_url,
-                  'fallback_source': city_webcam_url if image_url == fallback_image_url else None
-              }
-          else:
-              feed = {
-                  'alias': alias,
-                  'kind': 'hls',
-                  'streamid': stream_id,
-                  'stream_url': f'https://s127.ipcamlive.com/streams/{stream_id}/stream.m3u8',
-                  'snapshot_url': f'https://s127.ipcamlive.com/streams/{stream_id}/snapshot.jpg'
-              }
+                  feed = {
+                      'alias': alias,
+                      'kind': 'image',
+                      'streamid': None,
+                      'streamavailable': payload.get('details', {}).get('streamavailable'),
+                      'status': fallback_status,
+                      'image_url': image_url,
+                      'snapshot_url': image_url,
+                      'fallback_source': city_webcam_url if image_url == fallback_image_url else None
+                  }
+              else:
+                  feed = {
+                      'alias': alias,
+                      'kind': 'hls',
+                      'streamid': stream_id,
+                      'stream_url': f'https://s127.ipcamlive.com/streams/{stream_id}/stream.m3u8',
+                      'snapshot_url': f'https://s127.ipcamlive.com/streams/{stream_id}/snapshot.jpg'
+                  }
 
-          path = Path('feeds/adelaide.json')
           path.parent.mkdir(parents=True, exist_ok=True)
           old = path.read_text(encoding='utf-8') if path.exists() else ''
           new = json.dumps(feed, indent=2, ensure_ascii=False) + '\n'
