@@ -2,7 +2,7 @@ name: Update Adelaide feed
 
 on:
   schedule:
-    - cron: '*/5 * * * *'
+    - cron: '*/15 * * * *'
   workflow_dispatch:
 
 permissions:
@@ -67,6 +67,31 @@ jobs:
           def keep_existing_feed(reason):
               if path.exists():
                   existing = json.loads(path.read_text(encoding='utf-8'))
+                  if existing.get('kind') == 'image' and (
+                      existing.get('image_url') == fallback_image_url
+                      or existing.get('snapshot_url') == fallback_image_url
+                  ):
+                      try:
+                          capture_city_fallback()
+                          warn(
+                              'Resolve current IPCamLive stream',
+                              'fetch alias endpoint',
+                              'IPCamLive was unreachable, but the active City of Adelaide fallback image was refreshed',
+                              reason,
+                              'kept fallback mode and will retry IPCamLive on the next scheduled workflow run'
+                          )
+                          print('REFRESHED_FALLBACK_IMAGE', json.dumps(existing, ensure_ascii=False))
+                      except Exception as fallback_exc:
+                          warn(
+                              'Resolve current IPCamLive stream',
+                              'fetch alias endpoint and refresh City fallback',
+                              'kept existing Adelaide fallback image because both IPCamLive and the City fallback refresh failed',
+                              f'{reason}; city fallback error={fallback_exc!r}',
+                              'retry on the next scheduled workflow run'
+                          )
+                          print('NO_CHANGE', json.dumps(existing, ensure_ascii=False))
+                      sys.exit(0)
+
                   warn(
                       'Resolve current IPCamLive stream',
                       'fetch alias endpoint',
