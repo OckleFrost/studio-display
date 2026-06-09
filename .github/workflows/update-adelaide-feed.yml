@@ -2,7 +2,7 @@ name: Update Adelaide feed
 
 on:
   schedule:
-    - cron: '*/15 * * * *'
+    - cron: '*/5 * * * *'
   workflow_dispatch:
 
 permissions:
@@ -92,6 +92,31 @@ jobs:
                           print('NO_CHANGE', json.dumps(existing, ensure_ascii=False))
                       sys.exit(0)
 
+                  if existing.get('kind') == 'hls':
+                      try:
+                          verify_hls(existing.get('stream_url'))
+                          warn(
+                              'Resolve current IPCamLive stream',
+                              'fetch alias endpoint',
+                              'kept existing Adelaide HLS feed after validating the previous stream URL',
+                              reason,
+                              'retry IPCamLive alias lookup on the next scheduled workflow run'
+                          )
+                          print('NO_CHANGE', json.dumps(existing, ensure_ascii=False))
+                          sys.exit(0)
+                      except Exception as stale_exc:
+                          warn(
+                              'Resolve current IPCamLive stream',
+                              'fetch alias endpoint and validate previous HLS',
+                              'previous Adelaide HLS feed was stale, so the City fallback image will be refreshed',
+                              f'{reason}; previous HLS error={stale_exc!r}',
+                              'publish refreshed City fallback and retry IPCamLive on the next scheduled workflow run'
+                          )
+                          return build_city_fallback_feed(
+                              'alias_fetch_failed_previous_hls_stale',
+                              None
+                          )
+
                   warn(
                       'Resolve current IPCamLive stream',
                       'fetch alias endpoint',
@@ -120,6 +145,26 @@ jobs:
                   'fallback_source': None
               }
 
+          def build_city_fallback_feed(status, streamavailable):
+              try:
+                  image_url = capture_city_fallback()
+                  fallback_status = status
+              except Exception as exc:
+                  print('CITY_FALLBACK_FAILED', repr(exc))
+                  image_url = offline_fallback_url
+                  fallback_status = 'upstream_unavailable'
+
+              return {
+                  'alias': alias,
+                  'kind': 'image',
+                  'streamid': None,
+                  'streamavailable': streamavailable,
+                  'status': fallback_status,
+                  'image_url': image_url,
+                  'snapshot_url': image_url,
+                  'fallback_source': city_webcam_url if image_url == fallback_image_url else None
+              }
+
           def fetch_text(fetch_url, referer=None):
               headers = {'User-Agent': 'Mozilla/5.0 (OpenClaw studio-display GitHub Action)'}
               if referer:
@@ -127,6 +172,15 @@ jobs:
               req = urllib.request.Request(fetch_url, headers=headers)
               with urllib.request.urlopen(req, timeout=20) as response:
                   return response.read().decode('utf-8', errors='replace')
+
+          def verify_hls(stream_url):
+              if not stream_url:
+                  raise RuntimeError('missing stream URL')
+
+              text = fetch_text(stream_url, referer='https://www.ipcamlive.com/')
+              if '#EXTM3U' not in text:
+                  raise RuntimeError('HLS playlist response did not contain #EXTM3U')
+              return True
 
           def capture_city_fallback():
               fallback_image_path.parent.mkdir(parents=True, exist_ok=True)
@@ -165,34 +219,38 @@ jobs:
 
           if payload is not None:
               stream_id = payload.get('details', {}).get('streamid')
+              streamavailable = payload.get('details', {}).get('streamavailable')
               if not stream_id:
                   print('NO_STREAM_ID', json.dumps(payload, ensure_ascii=False))
-                  try:
-                      image_url = capture_city_fallback()
-                      fallback_status = 'upstream_unavailable_city_screenshot'
-                  except Exception as exc:
-                      print('CITY_FALLBACK_FAILED', repr(exc))
-                      image_url = offline_fallback_url
-                      fallback_status = 'upstream_unavailable'
-
-                  feed = {
-                      'alias': alias,
-                      'kind': 'image',
-                      'streamid': None,
-                      'streamavailable': payload.get('details', {}).get('streamavailable'),
-                      'status': fallback_status,
-                      'image_url': image_url,
-                      'snapshot_url': image_url,
-                      'fallback_source': city_webcam_url if image_url == fallback_image_url else None
-                  }
+                  feed = build_city_fallback_feed(
+                      'upstream_unavailable_city_screenshot',
+                      streamavailable
+                  )
               else:
-                  feed = {
-                      'alias': alias,
-                      'kind': 'hls',
-                      'streamid': stream_id,
-                      'stream_url': f'https://s127.ipcamlive.com/streams/{stream_id}/stream.m3u8',
-                      'snapshot_url': f'https://s127.ipcamlive.com/streams/{stream_id}/snapshot.jpg'
-                  }
+                  stream_url = f'https://s127.ipcamlive.com/streams/{stream_id}/stream.m3u8'
+                  snapshot_url = f'https://s127.ipcamlive.com/streams/{stream_id}/snapshot.jpg'
+                  try:
+                      verify_hls(stream_url)
+                  except Exception as exc:
+                      warn(
+                          'Resolve current IPCamLive stream',
+                          'validate IPCamLive HLS playlist',
+                          'IPCamLive reported a stream ID but the playlist was not usable, so the City fallback image was refreshed instead',
+                          f'streamid={stream_id}; error={exc!r}',
+                          'publish refreshed City fallback and retry IPCamLive on the next scheduled workflow run'
+                      )
+                      feed = build_city_fallback_feed(
+                          'reported_stream_unusable_city_screenshot',
+                          streamavailable
+                      )
+                  else:
+                      feed = {
+                          'alias': alias,
+                          'kind': 'hls',
+                          'streamid': stream_id,
+                          'stream_url': stream_url,
+                          'snapshot_url': snapshot_url
+                      }
 
           path.parent.mkdir(parents=True, exist_ok=True)
           old = path.read_text(encoding='utf-8') if path.exists() else ''
