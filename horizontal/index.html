@@ -127,6 +127,24 @@ body { color: #fff; }
   object-position: center center;
   background: #000;
 }
+
+.feed-offline {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 28px;
+  background:
+    radial-gradient(circle at 50% 38%, rgba(255, 255, 255, 0.12), transparent 30%),
+    linear-gradient(135deg, #0a0a0a, #171717 52%, #050505);
+  color: rgba(255, 255, 255, 0.76);
+  font-size: clamp(15px, 1vw, 20px);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1.35;
+  text-align: center;
+  text-transform: uppercase;
+}
 </style>
 </head>
 <body>
@@ -154,7 +172,7 @@ body { color: #fff; }
 
   <section class="tile brisbane" data-type="youtube" data-city="Brisbane">
     <div class="label">Brisbane</div>
-    <iframe class="frame" src="https://www.youtube.com/embed/LIevvz53iL8?autoplay=1&mute=1&controls=0&modestbranding=1&playsinline=1&rel=0" allow="autoplay; encrypted-media; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin" title="Brisbane live feed"></iframe>
+    <div class="feed-offline">Live source offline</div>
   </section>
 
   <section class="tile earth" data-type="youtube" data-city="Earth">

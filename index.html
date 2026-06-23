@@ -74,6 +74,24 @@ html, body {
   height: 100%;
   border: 0;
 }
+
+.feed-offline {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 28px;
+  background:
+    radial-gradient(circle at 50% 38%, rgba(255, 255, 255, 0.12), transparent 30%),
+    linear-gradient(135deg, #0a0a0a, #171717 52%, #050505);
+  color: rgba(255, 255, 255, 0.76);
+  font-size: clamp(18px, 2vw, 30px);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1.35;
+  text-align: center;
+  text-transform: uppercase;
+}
 </style>
 </head>
 
@@ -94,7 +112,7 @@ html, body {
 
     <div class="stream">
       <div class="label">Brisbane</div>
-      <iframe src="https://www.youtube.com/embed/LIevvz53iL8?autoplay=1&mute=1&controls=0&modestbranding=1" allow="autoplay"></iframe>
+      <div class="feed-offline">Live source offline</div>
     </div>
 
   </div>
