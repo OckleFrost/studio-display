@@ -86,7 +86,7 @@
 </head>
 <body>
   <iframe id="layout-onair" class="layout" data-src="../horizontal/" title="Studio Display on air layout" loading="eager"></iframe>
-  <iframe id="layout-offair" class="layout" data-src="../vertical-2/" title="Studio Display off air layout" loading="eager"></iframe>
+  <iframe id="layout-offair" class="layout" data-src="../vertical-2/" title="Studio Display off air layout" loading="lazy"></iframe>
 
   <div id="status" class="status">
     <strong id="status-mode">Loading…</strong>
@@ -137,16 +137,23 @@
       offAir: document.getElementById(DEFAULT_CONFIG.layouts.offAir.elementId)
     };
 
-    const BUILD_VERSION = '20260607-brisbane-channel-live';
+    const BUILD_VERSION = '20260623-brisbane-fixed-active-layout';
     const pageVersion = new URLSearchParams(window.location.search).get('v') || BUILD_VERSION;
 
-    function applyLayoutSrcVersions() {
-      Object.values(activeEls).forEach((frame) => {
-        if (!frame || frame.src) return;
-        const url = new URL(frame.dataset.src, window.location.href);
-        if (pageVersion) url.searchParams.set('v', pageVersion);
-        frame.src = url.toString();
-      });
+    function buildLayoutUrl(frame) {
+      const url = new URL(frame.dataset.src, window.location.href);
+      if (pageVersion) url.searchParams.set('v', pageVersion);
+      return url.toString();
+    }
+
+    function mountLayout(frame) {
+      if (!frame || frame.src) return;
+      frame.src = buildLayoutUrl(frame);
+    }
+
+    function unmountLayout(frame) {
+      if (!frame || !frame.src) return;
+      frame.removeAttribute('src');
     }
 
     const statusEl = document.getElementById('status');
@@ -207,7 +214,13 @@
     function setActiveMode(mode) {
       Object.entries(activeEls).forEach(([key, el]) => {
         if (!el) return;
-        el.classList.toggle('active', key === mode);
+        const isActive = key === mode;
+        el.classList.toggle('active', isActive);
+        if (isActive) {
+          mountLayout(el);
+        } else {
+          unmountLayout(el);
+        }
       });
 
       const layout = runtimeConfig.layouts[mode];
@@ -264,7 +277,6 @@
       }, runtimeConfig.configPollMs || DEFAULT_CONFIG.configPollMs);
     }
 
-    applyLayoutSrcVersions();
     applyConfig(DEFAULT_CONFIG);
     loadRemoteConfig().catch(() => {
       // Fall back to the baked-in default schedule on first load.
