@@ -112,11 +112,45 @@ html, body {
 
     <div class="stream">
       <div class="label">Brisbane</div>
-      <iframe src="https://www.youtube.com/embed/I7OY3JC15EE?autoplay=1&mute=1&controls=0&modestbranding=1" allow="autoplay"></iframe>
+      <iframe
+        id="brisbane-frame"
+        src="https://www.youtube.com/embed/I-_605hGTEM?autoplay=1&mute=1&controls=0&modestbranding=1&enablejsapi=1"
+        data-fallback-src="https://www.youtube.com/embed/I7OY3JC15EE?autoplay=1&mute=1&controls=0&modestbranding=1&enablejsapi=1"
+        allow="autoplay"
+        title="Brisbane live feed"></iframe>
     </div>
 
   </div>
 </div>
 
+<script src="https://www.youtube.com/iframe_api"></script>
+<script>
+  function onYouTubeIframeAPIReady() {
+    const frame = document.getElementById('brisbane-frame');
+    if (!frame || !window.YT || !YT.Player) return;
+
+    let hasPlayableState = false;
+    let usedFallback = false;
+
+    function switchToFallback() {
+      if (usedFallback || hasPlayableState) return;
+      usedFallback = true;
+      frame.src = frame.dataset.fallbackSrc;
+    }
+
+    new YT.Player(frame, {
+      events: {
+        onStateChange(event) {
+          if ([YT.PlayerState.PLAYING, YT.PlayerState.BUFFERING, YT.PlayerState.CUED].includes(event.data)) {
+            hasPlayableState = true;
+          }
+        },
+        onError: switchToFallback
+      }
+    });
+
+    window.setTimeout(switchToFallback, 25000);
+  }
+</script>
 </body>
 </html>
