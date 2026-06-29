@@ -67,6 +67,24 @@ jobs:
               if '#EXTM3U' not in text:
                   raise RuntimeError('HLS playlist response did not contain #EXTM3U')
 
+          def write_offline_feed(reason):
+              feed = {
+                  'alias': alias,
+                  'kind': 'image',
+                  'status': 'offline',
+                  'reason': reason,
+                  'image_url': '../assets/perth-offline.svg',
+              }
+
+              path.parent.mkdir(parents=True, exist_ok=True)
+              old = path.read_text(encoding='utf-8') if path.exists() else ''
+              new = json.dumps(feed, indent=2, ensure_ascii=False) + '\n'
+              if old == new:
+                  print('NO_CHANGE', json.dumps(feed, ensure_ascii=False))
+              else:
+                  path.write_text(new, encoding='utf-8')
+                  print('UPDATED', json.dumps(feed, ensure_ascii=False))
+
           def keep_existing_feed(reason):
               if not path.exists():
                   warn(
@@ -95,10 +113,12 @@ jobs:
                       warn(
                           'Resolve current Perth IPCamLive stream',
                           'fetch alias endpoint and validate previous HLS',
-                          'previous Perth HLS feed appears stale, but no fallback replacement is available beyond the last snapshot URL',
+                          'previous Perth HLS feed appears stale, so Perth will show an explicit offline panel',
                           f'{reason}; previous HLS error={stale_exc!r}',
                           'retry on the next scheduled workflow run'
                       )
+                      write_offline_feed(f'Previous Perth HLS became unavailable; {reason}')
+                      sys.exit(0)
 
               print('NO_CHANGE', json.dumps(existing, ensure_ascii=False))
               sys.exit(0)
@@ -121,7 +141,16 @@ jobs:
           streamavailable = details.get('streamavailable')
 
           if not stream_id:
-              keep_existing_feed(f'IPCamLive returned no streamid; streamavailable={streamavailable}')
+              reason = f'IPCamLive returned no streamid; streamavailable={streamavailable}'
+              warn(
+                  'Resolve current Perth IPCamLive stream',
+                  'resolve alias stream id',
+                  'Perth will show an explicit offline panel instead of a stale frame',
+                  reason,
+                  'retry IPCamLive alias lookup on the next scheduled workflow run'
+              )
+              write_offline_feed(reason)
+              sys.exit(0)
 
           address = details.get('address') or 'http://s128.ipcamlive.com/'
           host = urllib.parse.urlparse(address).netloc or 's128.ipcamlive.com'
