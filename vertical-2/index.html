@@ -159,7 +159,8 @@ html, body {
 
     <div class="stream perth">
       <div class="label">Perth</div>
-      <iframe src="https://g0.ipcamlive.com/player/player.php?alias=skimoveable&autoplay=1&mute=1" allow="autoplay"></iframe>
+      <video id="perth-video" autoplay muted playsinline preload="auto" title="Perth live feed"></video>
+      <img id="perth-fallback" class="hidden" src="https://s128.ipcamlive.com/streams/80i7dkjgqh0y9dgvh/snapshot.jpg" alt="Perth live snapshot" />
     </div>
 
   </div>
@@ -203,6 +204,18 @@ initAdelaideFeed({
   initialStreamUrl: 'https://s127.ipcamlive.com/streams/7fz6jisplh9tuxdq3/stream.m3u8',
   initialSnapshotUrl: 'https://s127.ipcamlive.com/streams/7fz6jisplh9tuxdq3/snapshot.jpg',
   scheduledChecksSydney: ['06:55', '13:55']
+});
+
+initRecoveringHlsFeed({
+  videoId: 'perth-video',
+  fallbackId: 'perth-fallback',
+  feedUrl: '../feeds/perth.json',
+  initialStreamId: '80i7dkjgqh0y9dgvh',
+  initialStreamUrl: 'https://s128.ipcamlive.com/streams/80i7dkjgqh0y9dgvh/stream.m3u8',
+  initialSnapshotUrl: 'https://s128.ipcamlive.com/streams/80i7dkjgqh0y9dgvh/snapshot.jpg',
+  emergencyImageUrl: 'https://s128.ipcamlive.com/streams/80i7dkjgqh0y9dgvh/snapshot.jpg',
+  scheduledChecksSydney: ['06:55', '13:55'],
+  stateName: '__perthFeedState'
 });
 </script>
 </body>

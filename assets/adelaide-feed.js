@@ -70,7 +70,7 @@
     };
   }
 
-  function initAdelaideFeed(options) {
+  function initRecoveringHlsFeed(options) {
     const config = Object.assign({
       feedUrl: '../feeds/adelaide.json',
       fallbackRefreshMs: 30000,
@@ -80,7 +80,8 @@
       minRecoveryGapMs: 20000,
       emergencyImageUrl: '../assets/adelaide-fallback.jpg',
       videoId: 'adelaide-video',
-      fallbackId: 'adelaide-fallback'
+      fallbackId: 'adelaide-fallback',
+      stateName: '__recoveringHlsFeedState'
     }, options || {});
 
     const video = document.getElementById(config.videoId);
@@ -359,9 +360,12 @@
       })
     };
 
-    global.__adelaideFeedState = exportedState;
+    global[config.stateName] = exportedState;
     return exportedState;
   }
 
-  global.initAdelaideFeed = initAdelaideFeed;
+  global.initRecoveringHlsFeed = initRecoveringHlsFeed;
+  global.initAdelaideFeed = function initAdelaideFeed(options) {
+    return initRecoveringHlsFeed(Object.assign({ stateName: '__adelaideFeedState' }, options || {}));
+  };
 })(window);
