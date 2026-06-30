@@ -1,11 +1,7 @@
 {
   "alias": "skimoveable",
-  "kind": "image",
-  "status": "backup",
-  "reason": "IPCamLive returned no streamid; streamavailable=0; using Fremantle Ports Victoria Quay Roundshot backup",
-  "image_url": "https://fremantleports.roundshot.com/cams/793",
-  "source": "Fremantle Ports Victoria Quay harbourcam",
-  "source_url": "https://fremantleports.roundshot.com/camera1/",
-  "refresh_seconds": 300,
-  "panorama": true
+  "kind": "hls",
+  "streamid": "80ittvgvrca4iu2hb",
+  "stream_url": "https://s128.ipcamlive.com/streams/80ittvgvrca4iu2hb/stream.m3u8",
+  "snapshot_url": "https://s128.ipcamlive.com/streams/80ittvgvrca4iu2hb/snapshot.jpg"
 }
