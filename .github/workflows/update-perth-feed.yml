@@ -71,9 +71,13 @@ jobs:
               feed = {
                   'alias': alias,
                   'kind': 'image',
-                  'status': 'offline',
-                  'reason': reason,
-                  'image_url': '../assets/perth-offline.svg',
+                  'status': 'backup',
+                  'reason': f'{reason}; using Fremantle Ports Victoria Quay Roundshot backup',
+                  'image_url': 'https://fremantleports.roundshot.com/cams/793',
+                  'source': 'Fremantle Ports Victoria Quay harbourcam',
+                  'source_url': 'https://fremantleports.roundshot.com/camera1/',
+                  'refresh_seconds': 300,
+                  'panorama': True,
               }
 
               path.parent.mkdir(parents=True, exist_ok=True)
@@ -113,7 +117,7 @@ jobs:
                       warn(
                           'Resolve current Perth IPCamLive stream',
                           'fetch alias endpoint and validate previous HLS',
-                          'previous Perth HLS feed appears stale, so Perth will show an explicit offline panel',
+                          'previous Perth HLS feed appears stale, so Perth will show the Victoria Quay backup panorama',
                           f'{reason}; previous HLS error={stale_exc!r}',
                           'retry on the next scheduled workflow run'
                       )
@@ -145,7 +149,7 @@ jobs:
               warn(
                   'Resolve current Perth IPCamLive stream',
                   'resolve alias stream id',
-                  'Perth will show an explicit offline panel instead of a stale frame',
+                  'Perth will show the Victoria Quay backup panorama instead of a stale frame',
                   reason,
                   'retry IPCamLive alias lookup on the next scheduled workflow run'
               )

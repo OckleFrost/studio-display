@@ -47,6 +47,7 @@
     const streamUrl = feed.stream_url || feed.streamUrl;
     const snapshotUrl = feed.snapshot_url || feed.snapshotUrl;
     const streamId = feed.streamid || feed.streamId;
+    const panorama = Boolean(feed.panorama || feed.isPanorama || feed.presentation === 'panorama');
 
     if (kind === 'image') {
       if (!imageUrl && !snapshotUrl) return null;
@@ -55,7 +56,8 @@
         streamId: streamId || null,
         streamUrl: null,
         snapshotUrl: imageUrl || snapshotUrl,
-        imageUrl: imageUrl || snapshotUrl
+        imageUrl: imageUrl || snapshotUrl,
+        panorama
       };
     }
 
@@ -66,7 +68,8 @@
       streamId: streamId || null,
       streamUrl,
       snapshotUrl,
-      imageUrl: null
+      imageUrl: null,
+      panorama: false
     };
   }
 
@@ -95,6 +98,7 @@
       currentStreamUrl: config.initialStreamUrl,
       currentSnapshotUrl: config.initialSnapshotUrl,
       currentImageUrl: config.initialImageUrl || null,
+      currentPanorama: Boolean(config.initialPanorama),
       snapshotFailed: false,
       hls: null,
       fallbackIntervalId: null,
@@ -174,7 +178,8 @@
         feed.streamId !== state.currentStreamId ||
         feed.streamUrl !== state.currentStreamUrl ||
         feed.snapshotUrl !== state.currentSnapshotUrl ||
-        feed.imageUrl !== state.currentImageUrl
+        feed.imageUrl !== state.currentImageUrl ||
+        feed.panorama !== state.currentPanorama
       );
 
       state.currentKind = feed.kind;
@@ -182,8 +187,10 @@
       state.currentStreamUrl = feed.streamUrl;
       state.currentSnapshotUrl = feed.snapshotUrl;
       state.currentImageUrl = feed.imageUrl;
+      state.currentPanorama = feed.panorama;
       state.snapshotFailed = false;
       fallback.src = state.currentSnapshotUrl;
+      fallback.classList.toggle('feed-panorama', Boolean(feed.panorama));
 
       if (changed || restartPlayer) {
         startPlayback();
@@ -356,7 +363,8 @@
         streamId: state.currentStreamId,
         streamUrl: state.currentStreamUrl,
         snapshotUrl: state.currentSnapshotUrl,
-        imageUrl: state.currentImageUrl
+        imageUrl: state.currentImageUrl,
+        panorama: state.currentPanorama
       })
     };
 

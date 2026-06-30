@@ -1,7 +1,11 @@
 {
   "alias": "skimoveable",
   "kind": "image",
-  "status": "offline",
-  "reason": "IPCamLive returned no streamid; streamavailable=0",
-  "image_url": "../assets/perth-offline.svg"
+  "status": "backup",
+  "reason": "IPCamLive returned no streamid; using Fremantle Ports Victoria Quay Roundshot backup",
+  "image_url": "https://fremantleports.roundshot.com/cams/793",
+  "source": "Fremantle Ports Victoria Quay harbourcam",
+  "source_url": "https://fremantleports.roundshot.com/camera1/",
+  "refresh_seconds": 300,
+  "panorama": true
 }
