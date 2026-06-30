@@ -207,23 +207,54 @@ body { color: #fff; }
     const frame = document.getElementById('brisbane-frame');
     if (!frame || !window.YT || !YT.Player) return;
 
-    let hasPlayableState = false;
-    let usedFallback = false;
+    const fallbackSrc = frame.dataset.fallbackSrc;
+    if (!fallbackSrc || frame.src === fallbackSrc) return;
 
-    function switchToFallback() {
-      if (usedFallback || hasPlayableState) return;
+    let usedFallback = false;
+    let noPlayTimer = null;
+    let bufferTimer = null;
+
+    function clearTimers() {
+      window.clearTimeout(noPlayTimer);
+      window.clearTimeout(bufferTimer);
+    }
+
+    function switchToFallback(reason) {
+      if (usedFallback) return;
       usedFallback = true;
-      frame.src = frame.dataset.fallbackSrc;
+      clearTimers();
+      frame.dataset.fallbackReason = reason || 'unknown';
+      frame.src = fallbackSrc;
+    }
+
+    function armNoPlayTimer() {
+      window.clearTimeout(noPlayTimer);
+      noPlayTimer = window.setTimeout(() => switchToFallback('no-playing-state'), 45000);
+    }
+
+    function armBufferTimer() {
+      window.clearTimeout(bufferTimer);
+      bufferTimer = window.setTimeout(() => switchToFallback('buffering-timeout'), 30000);
     }
 
     new YT.Player(frame, {
       events: {
+        onReady: armNoPlayTimer,
         onStateChange(event) {
-          if ([YT.PlayerState.PLAYING, YT.PlayerState.BUFFERING, YT.PlayerState.CUED].includes(event.data)) {
-            hasPlayableState = true;
+          if (event.data === YT.PlayerState.PLAYING) {
+            clearTimers();
+            return;
           }
+
+          if (event.data === YT.PlayerState.BUFFERING) {
+            armBufferTimer();
+            return;
+          }
+
+          if ([YT.PlayerState.UNSTARTED, YT.PlayerState.CUED].includes(event.data)) armNoPlayTimer();
+          if (event.data === YT.PlayerState.ENDED) switchToFallback('ended');
         },
-        onError: switchToFallback
+        onError: () => switchToFallback('youtube-error')
       }
     });
 
