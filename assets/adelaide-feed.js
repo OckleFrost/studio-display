@@ -77,6 +77,7 @@
     const config = Object.assign({
       feedUrl: '../feeds/adelaide.json',
       fallbackRefreshMs: 30000,
+      periodicFeedRefreshMs: 120000,
       scheduledChecksSydney: ['06:55', '13:55'],
       watchdogCheckMs: 15000,
       watchdogStallMs: 45000,
@@ -102,6 +103,7 @@
       snapshotFailed: false,
       hls: null,
       fallbackIntervalId: null,
+      periodicRefreshIntervalId: null,
       scheduledRefreshTimeoutId: null,
       watchdogIntervalId: null,
       refreshPromise: null,
@@ -339,6 +341,14 @@
       }, timeoutMs);
     }
 
+    function startPeriodicFeedRefresh() {
+      if (!config.periodicFeedRefreshMs || config.periodicFeedRefreshMs < 15000) return;
+      if (state.periodicRefreshIntervalId) global.clearInterval(state.periodicRefreshIntervalId);
+      state.periodicRefreshIntervalId = global.setInterval(() => {
+        refreshFeed();
+      }, config.periodicFeedRefreshMs);
+    }
+
     video.addEventListener('error', handlePlaybackFailure);
     fallback.addEventListener('error', () => {
       if (state.snapshotFailed || !config.emergencyImageUrl) return;
@@ -353,6 +363,7 @@
     });
     startPlayback();
     refreshFeed();
+    startPeriodicFeedRefresh();
     scheduleNextTimedRefresh();
     startWatchdog();
 
