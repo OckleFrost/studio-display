@@ -1,7 +1,11 @@
 {
   "alias": "bsyc1080",
-  "kind": "hls",
-  "streamid": "7fzur9hfijhm1dle0",
-  "stream_url": "https://s127.ipcamlive.com/streams/7fzur9hfijhm1dle0/stream.m3u8",
-  "snapshot_url": "https://s127.ipcamlive.com/streams/7fzur9hfijhm1dle0/snapshot.jpg"
+  "kind": "image",
+  "streamid": null,
+  "streamavailable": "0",
+  "status": "upstream_unavailable_city_screenshot",
+  "image_url": "/studio-display/assets/adelaide-fallback.jpg?captured=1783104716",
+  "snapshot_url": "/studio-display/assets/adelaide-fallback.jpg?captured=1783104716",
+  "fallback_source": "https://www.cityofadelaide.com.au/webcams/town-hall-south/",
+  "captured_at": 1783104716
 }
