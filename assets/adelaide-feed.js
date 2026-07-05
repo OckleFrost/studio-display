@@ -202,7 +202,11 @@
     }
 
     async function fetchFeed() {
-      const response = await fetch(`${config.feedUrl}?t=${Date.now()}`, { cache: 'no-store' });
+      const headers = config.feedAccept ? { Accept: config.feedAccept } : undefined;
+      const response = await fetch(cacheBust(config.feedUrl), {
+        cache: 'no-store',
+        headers
+      });
       if (!response.ok) {
         throw new Error(`feed-http-${response.status}`);
       }
@@ -383,14 +387,15 @@
     return exportedState;
   }
 
-  const ADELAIDE_RAW_BASE = 'https://raw.githubusercontent.com/OckleFrost/studio-display/main/';
+  const ADELAIDE_API_BASE = 'https://api.github.com/repos/OckleFrost/studio-display/contents/';
 
   global.initRecoveringHlsFeed = initRecoveringHlsFeed;
   global.initAdelaideFeed = function initAdelaideFeed(options) {
     return initRecoveringHlsFeed(Object.assign({
       stateName: '__adelaideFeedState',
-      feedUrl: `${ADELAIDE_RAW_BASE}feeds/adelaide.json`,
-      emergencyImageUrl: `${ADELAIDE_RAW_BASE}assets/adelaide-fallback.jpg`
+      feedUrl: `${ADELAIDE_API_BASE}feeds/adelaide.json?ref=main`,
+      feedAccept: 'application/vnd.github.raw+json',
+      emergencyImageUrl: 'https://raw.githubusercontent.com/OckleFrost/studio-display/main/assets/adelaide-fallback.jpg'
     }, options || {}));
   };
 })(window);
