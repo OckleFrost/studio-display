@@ -52,7 +52,6 @@ jobs:
           offline_fallback_url = '/studio-display/assets/adelaide-offline.svg'
           hls_stability_checks = 2
           hls_stability_interval_seconds = 8
-          hls_restore_hold_seconds = 300
           endpoint = 'https://www.ipcamlive.com/ajax/getcamerastreamstate.php?'
           url = endpoint + urllib.parse.urlencode({'cameraalias': alias})
           path = Path('feeds/adelaide.json')
@@ -151,7 +150,7 @@ jobs:
                   'fallback_source': None
               }
 
-          def build_city_fallback_feed(status, streamavailable, pending_hls=None):
+          def build_city_fallback_feed(status, streamavailable):
               try:
                   image_url, captured_at = capture_city_fallback()
                   versioned_image_url = f'{image_url}?captured={captured_at}'
@@ -163,7 +162,7 @@ jobs:
                   captured_at = None
                   fallback_status = 'upstream_unavailable'
 
-              feed = {
+              return {
                   'alias': alias,
                   'kind': 'image',
                   'streamid': None,
@@ -174,9 +173,6 @@ jobs:
                   'fallback_source': city_webcam_url if image_url == fallback_image_url else None,
                   'captured_at': captured_at
               }
-              if pending_hls:
-                  feed['pending_hls'] = pending_hls
-              return feed
 
           def fetch_text(fetch_url, referer=None):
               headers = {'User-Agent': 'Mozilla/5.0 (OpenClaw studio-display GitHub Action)'}
@@ -223,42 +219,6 @@ jobs:
                       time.sleep(hls_stability_interval_seconds)
               return True
 
-          def build_hls_feed_or_hold_recovery(existing, stream_id, stream_url, snapshot_url, streamavailable):
-              if existing and existing.get('kind') == 'image':
-                  now = int(time.time())
-                  existing_pending = existing.get('pending_hls') or {}
-                  if existing_pending.get('streamid') == stream_id:
-                      first_seen_at = int(existing_pending.get('first_seen_at') or now)
-                  else:
-                      first_seen_at = now
-
-                  pending_hls = {
-                      'streamid': stream_id,
-                      'stream_url': stream_url,
-                      'snapshot_url': snapshot_url,
-                      'first_seen_at': first_seen_at,
-                      'last_seen_at': now
-                  }
-                  if now - first_seen_at < hls_restore_hold_seconds:
-                      print(
-                          'HOLD_HLS_RESTORE '
-                          f'streamid={stream_id} observed_for={now - first_seen_at}s '
-                          f'required={hls_restore_hold_seconds}s'
-                      )
-                      return build_city_fallback_feed(
-                          'upstream_recovering_city_screenshot',
-                          streamavailable,
-                          pending_hls
-                      )
-
-              return {
-                  'alias': alias,
-                  'kind': 'hls',
-                  'streamid': stream_id,
-                  'stream_url': stream_url,
-                  'snapshot_url': snapshot_url
-              }
-
           def capture_city_fallback():
               captured_at = int(time.time())
               fallback_image_path.parent.mkdir(parents=True, exist_ok=True)
@@ -287,7 +247,6 @@ jobs:
           })
           payload = None
           feed = None
-          existing_feed = json.loads(path.read_text(encoding='utf-8')) if path.exists() else None
           try:
               with urllib.request.urlopen(req, timeout=20) as response:
                   payload = json.loads(response.read().decode('utf-8', errors='replace'))
@@ -323,13 +282,13 @@ jobs:
                           streamavailable
                       )
                   else:
-                      feed = build_hls_feed_or_hold_recovery(
-                          existing_feed,
-                          stream_id,
-                          stream_url,
-                          snapshot_url,
-                          streamavailable
-                      )
+                      feed = {
+                          'alias': alias,
+                          'kind': 'hls',
+                          'streamid': stream_id,
+                          'stream_url': stream_url,
+                          'snapshot_url': snapshot_url
+                      }
 
           path.parent.mkdir(parents=True, exist_ok=True)
           old = path.read_text(encoding='utf-8') if path.exists() else ''
