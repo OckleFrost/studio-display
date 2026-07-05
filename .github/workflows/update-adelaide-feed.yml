@@ -50,6 +50,8 @@ jobs:
           fallback_image_path = Path('assets/adelaide-fallback.jpg')
           fallback_image_url = '/studio-display/assets/adelaide-fallback.jpg'
           offline_fallback_url = '/studio-display/assets/adelaide-offline.svg'
+          hls_stability_checks = 2
+          hls_stability_interval_seconds = 8
           endpoint = 'https://www.ipcamlive.com/ajax/getcamerastreamstate.php?'
           url = endpoint + urllib.parse.urlencode({'cameraalias': alias})
           path = Path('feeds/adelaide.json')
@@ -210,8 +212,11 @@ jobs:
               return True
 
           def verify_hls_feed(stream_url, snapshot_url):
-              verify_hls(stream_url)
-              verify_url(snapshot_url, referer='https://www.ipcamlive.com/')
+              for attempt in range(hls_stability_checks):
+                  verify_hls(stream_url)
+                  verify_url(snapshot_url, referer='https://www.ipcamlive.com/')
+                  if attempt < hls_stability_checks - 1:
+                      time.sleep(hls_stability_interval_seconds)
               return True
 
           def capture_city_fallback():
