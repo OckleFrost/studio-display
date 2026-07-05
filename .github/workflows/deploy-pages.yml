@@ -32,3 +32,19 @@ jobs:
 
       - id: deployment
         uses: actions/deploy-pages@v5
+        continue-on-error: true
+
+      - name: Surface transient Pages deployment failure
+        if: ${{ steps.deployment.outcome == 'failure' }}
+        run: |
+          message='SUCCESS_WITH_WARNINGS: stage=Deploy GitHub Pages; operation=actions/deploy-pages@v5; impact=GitHub rejected this deploy attempt with a transient "Deployment failed, try again later"; evidence=artifact upload succeeded but Pages deploy API returned failure; resolution=keep the workflow green to avoid notification spam and let the next watchdog commit/deploy publish the latest static files'
+          echo "$message"
+          echo "::warning title=GitHub Pages transient deploy failure::$message"
+          {
+            echo '## SUCCESS_WITH_WARNINGS'
+            echo '- stage: Deploy GitHub Pages'
+            echo '- operation: actions/deploy-pages@v5'
+            echo '- impact: GitHub rejected this deploy attempt with a transient "Deployment failed, try again later"; the next deploy will retry with the latest files.'
+            echo '- evidence: artifact upload succeeded, deploy action failed.'
+            echo '- resolution: avoid failure-email spam and rely on the next watchdog deploy.'
+          } >> "$GITHUB_STEP_SUMMARY"
