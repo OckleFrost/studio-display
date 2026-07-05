@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - 'feeds/adelaide.json'
+      - 'assets/adelaide-fallback.jpg'
   workflow_dispatch:
 
 permissions:
@@ -20,7 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: https://ocklefrost.github.io/studio-display/
     steps:
       - uses: actions/checkout@v4
 
@@ -30,21 +33,29 @@ jobs:
         with:
           path: .
 
-      - id: deployment
+      - id: deployment_1
         uses: actions/deploy-pages@v5
         continue-on-error: true
 
-      - name: Surface transient Pages deployment failure
-        if: ${{ steps.deployment.outcome == 'failure' }}
+      - name: Wait before Pages deploy retry
+        if: ${{ steps.deployment_1.outcome == 'failure' }}
+        run: sleep 20
+
+      - id: deployment_2
+        if: ${{ steps.deployment_1.outcome == 'failure' }}
+        uses: actions/deploy-pages@v5
+        continue-on-error: true
+
+      - name: Wait before final Pages deploy retry
+        if: ${{ steps.deployment_1.outcome == 'failure' && steps.deployment_2.outcome == 'failure' }}
+        run: sleep 45
+
+      - id: deployment_3
+        if: ${{ steps.deployment_1.outcome == 'failure' && steps.deployment_2.outcome == 'failure' }}
+        uses: actions/deploy-pages@v5
+
+      - name: Report Pages deploy retry
+        if: ${{ steps.deployment_1.outcome == 'failure' && (steps.deployment_2.outcome == 'success' || steps.deployment_3.outcome == 'success') }}
         run: |
-          message='SUCCESS_WITH_WARNINGS: stage=Deploy GitHub Pages; operation=actions/deploy-pages@v5; impact=GitHub rejected this deploy attempt with a transient "Deployment failed, try again later"; evidence=artifact upload succeeded but Pages deploy API returned failure; resolution=keep the workflow green to avoid notification spam and let the next watchdog commit/deploy publish the latest static files'
-          echo "$message"
-          echo "::warning title=GitHub Pages transient deploy failure::$message"
-          {
-            echo '## SUCCESS_WITH_WARNINGS'
-            echo '- stage: Deploy GitHub Pages'
-            echo '- operation: actions/deploy-pages@v5'
-            echo '- impact: GitHub rejected this deploy attempt with a transient "Deployment failed, try again later"; the next deploy will retry with the latest files.'
-            echo '- evidence: artifact upload succeeded, deploy action failed.'
-            echo '- resolution: avoid failure-email spam and rely on the next watchdog deploy.'
-          } >> "$GITHUB_STEP_SUMMARY"
+          echo 'Pages deploy failed once, then recovered on retry.'
+          echo '::warning title=GitHub Pages deploy recovered::Initial deploy attempt failed, but a retry succeeded.'

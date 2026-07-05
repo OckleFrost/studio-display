@@ -48,7 +48,8 @@ jobs:
           city_webcam_url = 'https://www.cityofadelaide.com.au/webcams/town-hall-south/'
           city_hls_url = 'https://stream.castr.com/6747e375d1a99d0e8db51bb0/live_67de07a0017d11f1be7e5b649faa3b0a/index.m3u8'
           fallback_image_path = Path('assets/adelaide-fallback.jpg')
-          fallback_image_url = '/studio-display/assets/adelaide-fallback.jpg'
+          fallback_image_url = 'https://raw.githubusercontent.com/OckleFrost/studio-display/main/assets/adelaide-fallback.jpg'
+          legacy_fallback_image_url = '/studio-display/assets/adelaide-fallback.jpg'
           offline_fallback_url = '/studio-display/assets/adelaide-offline.svg'
           hls_stability_checks = 2
           hls_stability_interval_seconds = 8
@@ -59,7 +60,10 @@ jobs:
           def is_city_fallback_url(value):
               if not value:
                   return False
-              return str(value).split('?', 1)[0] == fallback_image_url
+              return str(value).split('?', 1)[0] in {
+                  fallback_image_url,
+                  legacy_fallback_image_url
+              }
 
           def warn(stage, operation, impact, evidence, resolution):
               message = (

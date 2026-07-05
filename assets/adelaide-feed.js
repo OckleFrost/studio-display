@@ -383,8 +383,14 @@
     return exportedState;
   }
 
+  const ADELAIDE_RAW_BASE = 'https://raw.githubusercontent.com/OckleFrost/studio-display/main/';
+
   global.initRecoveringHlsFeed = initRecoveringHlsFeed;
   global.initAdelaideFeed = function initAdelaideFeed(options) {
-    return initRecoveringHlsFeed(Object.assign({ stateName: '__adelaideFeedState' }, options || {}));
+    return initRecoveringHlsFeed(Object.assign({
+      stateName: '__adelaideFeedState',
+      feedUrl: `${ADELAIDE_RAW_BASE}feeds/adelaide.json`,
+      emergencyImageUrl: `${ADELAIDE_RAW_BASE}assets/adelaide-fallback.jpg`
+    }, options || {}));
   };
 })(window);
