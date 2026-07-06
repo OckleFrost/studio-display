@@ -2,8 +2,10 @@
   "kind": "youtube",
   "source": "Brisbane Live",
   "channel_live_url": "https://www.youtube.com/@BrisbaneLivestream/live",
-  "primary_video_id": "sCPKGMfHGQA",
+  "primary_video_id": null,
   "fallback_video_id": "I7OY3JC15EE",
-  "status": "live",
-  "updated_at": 1783299124
+  "status": "backup",
+  "previous_primary_video_id": "sCPKGMfHGQA",
+  "reason": "playabilityStatus='LOGIN_REQUIRED'",
+  "updated_at": 1783299314
 }
