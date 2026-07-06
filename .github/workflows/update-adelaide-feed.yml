@@ -2,11 +2,7 @@ name: Update Adelaide feed
 
 on:
   schedule:
-    - cron: '*/5 * * * *'
-    - cron: '1-59/5 * * * *'
-    - cron: '2-59/5 * * * *'
-    - cron: '3-59/5 * * * *'
-    - cron: '4-59/5 * * * *'
+    - cron: '*/15 * * * *'
   workflow_dispatch:
 
 permissions:
@@ -309,6 +305,10 @@ jobs:
           if git diff --quiet -- feeds/adelaide.json assets/adelaide-fallback.jpg; then
             exit 0
           fi
+          generated_dir="${RUNNER_TEMP}/adelaide-feed-update"
+          mkdir -p "${generated_dir}/feeds" "${generated_dir}/assets"
+          cp feeds/adelaide.json "${generated_dir}/feeds/adelaide.json"
+          cp assets/adelaide-fallback.jpg "${generated_dir}/assets/adelaide-fallback.jpg"
           stream_id=$(python3 - <<'PY'
           import json
           feed = json.load(open('feeds/adelaide.json'))
@@ -317,17 +317,23 @@ jobs:
           )
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add feeds/adelaide.json assets/adelaide-fallback.jpg
-          git commit -m "Update Adelaide feed alias to ${stream_id}"
           for attempt in 1 2 3; do
+            git add feeds/adelaide.json assets/adelaide-fallback.jpg
+            git commit -m "Update Adelaide feed alias to ${stream_id}"
             if git push; then
               exit 0
             fi
 
-            echo "Push attempt ${attempt} failed; rebasing onto the latest main before retrying."
+            echo "Push attempt ${attempt} failed; resetting to latest main and reapplying generated feed files."
             git fetch origin main
-            git rebase origin/main
+            git reset --hard origin/main
+            cp "${generated_dir}/feeds/adelaide.json" feeds/adelaide.json
+            cp "${generated_dir}/assets/adelaide-fallback.jpg" assets/adelaide-fallback.jpg
+            if git diff --quiet -- feeds/adelaide.json assets/adelaide-fallback.jpg; then
+              echo "Latest main already contains this Adelaide feed state."
+              exit 0
+            fi
           done
 
-          echo "::error title=Adelaide feed push failed::Could not push feed update after rebasing onto latest main."
+          echo "::error title=Adelaide feed push failed::Could not push feed update after resetting onto latest main."
           exit 1
