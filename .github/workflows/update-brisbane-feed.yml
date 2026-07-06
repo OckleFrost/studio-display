@@ -93,6 +93,17 @@ jobs:
                       return match.group(1)
               return None
 
+          def channel_page_supports_candidate(page, video_id):
+              if not page or not video_id:
+                  return False
+              if f'"videoId":"{video_id}"' not in page:
+                  return False
+              return (
+                  'liveStreamability' in page
+                  or is_live_now(page)
+                  or extract_playability_status(page) == 'OK'
+              )
+
           def read_existing():
               if not path.exists():
                   return {}
@@ -145,20 +156,25 @@ jobs:
               candidate = extract_live_video_id(channel_page)
               candidate_ok, candidate_reason = validate_video(candidate)
           except (TimeoutError, socket.timeout, urllib.error.URLError) as exc:
+              channel_page = ''
               candidate = None
               candidate_ok = False
               candidate_reason = repr(exc)
 
-          if candidate_ok:
+          candidate_supported_by_channel = channel_page_supports_candidate(channel_page, candidate)
+          watch_validation_blocked = 'LOGIN_REQUIRED' in str(candidate_reason)
+
+          if candidate_ok or (candidate_supported_by_channel and watch_validation_blocked):
               feed = {
                   'kind': 'youtube',
                   'source': 'Brisbane Live',
                   'channel_live_url': channel_live_url,
                   'primary_video_id': candidate,
                   'fallback_video_id': existing_fallback_id,
-                  'status': 'live',
+                  'status': 'live' if candidate_ok else 'inferred_live_from_channel',
                   'replaced_video_id': current_video_id,
                   'replacement_reason': current_reason,
+                  'validation_note': None if candidate_ok else candidate_reason,
                   'updated_at': int(time.time())
               }
               write_feed(feed)
