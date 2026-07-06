@@ -226,7 +226,9 @@ initAdelaideFeed({
 initRecoveringHlsFeed({
   videoId: 'perth-video',
   fallbackId: 'perth-fallback',
-  feedUrl: '../feeds/perth.json',
+  feedUrl: 'https://api.github.com/repos/OckleFrost/studio-display/contents/feeds/perth.json?ref=main',
+  feedAccept: 'application/vnd.github.raw+json',
+  periodicFeedRefreshMs: 30000,
   initialStreamId: '80i7dkjgqh0y9dgvh',
   initialStreamUrl: 'https://s128.ipcamlive.com/streams/80i7dkjgqh0y9dgvh/stream.m3u8',
   initialSnapshotUrl: 'https://s128.ipcamlive.com/streams/80i7dkjgqh0y9dgvh/snapshot.jpg',
