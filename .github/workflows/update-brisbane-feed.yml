@@ -161,10 +161,9 @@ jobs:
               candidate_ok = False
               candidate_reason = repr(exc)
 
-          candidate_supported_by_channel = channel_page_supports_candidate(channel_page, candidate)
           watch_validation_blocked = 'LOGIN_REQUIRED' in str(candidate_reason)
 
-          if candidate_ok or (candidate_supported_by_channel and watch_validation_blocked):
+          if candidate_ok or (candidate and watch_validation_blocked):
               feed = {
                   'kind': 'youtube',
                   'source': 'Brisbane Live',
