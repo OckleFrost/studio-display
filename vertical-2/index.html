@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <title>Studio Display - Vertical 2</title>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-<script src="../assets/adelaide-feed.js"></script>
+<script src="../assets/adelaide-feed.js?v=20260706-adelaide-fast-restore"></script>
 <style>
 :root {
   --bg: #000;
@@ -239,6 +239,7 @@ html, body {
 initAdelaideFeed({
   videoId: 'adelaide-video',
   fallbackId: 'adelaide-fallback',
+  periodicFeedRefreshMs: 30000,
   initialStreamId: '7fz6jisplh9tuxdq3',
   initialStreamUrl: 'https://s127.ipcamlive.com/streams/7fz6jisplh9tuxdq3/stream.m3u8',
   initialSnapshotUrl: 'https://s127.ipcamlive.com/streams/7fz6jisplh9tuxdq3/snapshot.jpg',
