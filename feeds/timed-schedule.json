@@ -2,7 +2,7 @@
   "timeZone": "Australia/Sydney",
   "switchCheckMs": 15000,
   "configPollMs": 30000,
-  "childVersion": "20260706-brisbane-main-restore",
+  "childVersion": "20260706-brisbane-feed-watchdog",
   "showStatusOverlay": false,
   "schedules": [
     { "days": [1, 2, 3, 4, 5], "start": "07:30", "end": "13:01", "mode": "onAir" },

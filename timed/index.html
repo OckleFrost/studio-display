@@ -98,7 +98,7 @@
       timeZone: 'Australia/Sydney',
       switchCheckMs: 15000,
       configPollMs: 30000,
-      childVersion: '20260706-brisbane-main-restore',
+      childVersion: '20260706-brisbane-feed-watchdog',
       showStatusOverlay: false,
       scheduleUrl: '../feeds/timed-schedule.json',
       schedules: [
@@ -138,7 +138,7 @@
       offAir: document.getElementById(DEFAULT_CONFIG.layouts.offAir.elementId)
     };
 
-    const BUILD_VERSION = '20260706-brisbane-main-restore';
+    const BUILD_VERSION = '20260706-brisbane-feed-watchdog';
     const explicitPageVersion = new URLSearchParams(window.location.search).get('v');
 
     function getPageVersion() {

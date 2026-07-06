@@ -6,6 +6,7 @@
 <title>Studio Display - Horizontal</title>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <script src="../assets/adelaide-feed.js?v=20260706-adelaide-fast-restore"></script>
+<script src="../assets/brisbane-feed.js?v=20260706-brisbane-feed-watchdog"></script>
 <style>
 :root {
   --bg: #000;
@@ -189,7 +190,8 @@ body { color: #fff; }
       id="brisbane-frame"
       class="frame"
       src="https://www.youtube.com/embed/sCPKGMfHGQA?autoplay=1&mute=1&controls=0&modestbranding=1&playsinline=1&rel=0&enablejsapi=1"
-      data-fallback-src="https://www.youtube.com/embed/I7OY3JC15EE?autoplay=1&mute=1&controls=0&modestbranding=1&playsinline=1&rel=0&enablejsapi=1"
+      data-primary-video-id="sCPKGMfHGQA"
+      data-fallback-video-id="I7OY3JC15EE"
       allow="autoplay; encrypted-media; picture-in-picture"
       referrerpolicy="strict-origin-when-cross-origin"
       title="Brisbane live feed"></iframe>
@@ -203,62 +205,12 @@ body { color: #fff; }
 
 <script src="https://www.youtube.com/iframe_api"></script>
 <script>
-  function onYouTubeIframeAPIReady() {
-    const frame = document.getElementById('brisbane-frame');
-    if (!frame || !window.YT || !YT.Player) return;
-
-    const fallbackSrc = frame.dataset.fallbackSrc;
-    if (!fallbackSrc || frame.src === fallbackSrc) return;
-
-    let usedFallback = false;
-    let noPlayTimer = null;
-    let bufferTimer = null;
-
-    function clearTimers() {
-      window.clearTimeout(noPlayTimer);
-      window.clearTimeout(bufferTimer);
-    }
-
-    function switchToFallback(reason) {
-      if (usedFallback) return;
-      usedFallback = true;
-      clearTimers();
-      frame.dataset.fallbackReason = reason || 'unknown';
-      frame.src = fallbackSrc;
-    }
-
-    function armNoPlayTimer() {
-      window.clearTimeout(noPlayTimer);
-      noPlayTimer = window.setTimeout(() => switchToFallback('no-playing-state'), 45000);
-    }
-
-    function armBufferTimer() {
-      window.clearTimeout(bufferTimer);
-      bufferTimer = window.setTimeout(() => switchToFallback('buffering-timeout'), 30000);
-    }
-
-    new YT.Player(frame, {
-      events: {
-        onReady: armNoPlayTimer,
-        onStateChange(event) {
-          if (event.data === YT.PlayerState.PLAYING) {
-            clearTimers();
-            return;
-          }
-
-          if (event.data === YT.PlayerState.BUFFERING) {
-            armBufferTimer();
-            return;
-          }
-
-          if ([YT.PlayerState.UNSTARTED, YT.PlayerState.CUED].includes(event.data)) armNoPlayTimer();
-          if (event.data === YT.PlayerState.ENDED) switchToFallback('ended');
-        },
-        onError: () => switchToFallback('youtube-error')
-      }
-    });
-
-  }
+initBrisbaneFeed({
+  frameId: 'brisbane-frame',
+  initialVideoId: 'sCPKGMfHGQA',
+  fallbackVideoId: 'I7OY3JC15EE',
+  refreshMs: 300000
+});
 </script>
 <script>
 initAdelaideFeed({

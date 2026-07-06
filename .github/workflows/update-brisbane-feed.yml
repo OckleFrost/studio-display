@@ -1,0 +1,214 @@
+name: Update Brisbane feed
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-brisbane-feed
+  cancel-in-progress: true
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve current Brisbane YouTube stream
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import re
+          import socket
+          import sys
+          import time
+          import urllib.error
+          import urllib.request
+          from pathlib import Path
+
+          path = Path('feeds/brisbane.json')
+          channel_live_url = 'https://www.youtube.com/@BrisbaneLivestream/live'
+          fallback_video_id = 'I7OY3JC15EE'
+          user_agent = 'Mozilla/5.0 (OpenClaw studio-display GitHub Action)'
+
+          def warn(stage, operation, impact, evidence, resolution):
+              message = (
+                  f'SUCCESS_WITH_WARNINGS: stage={stage}; operation={operation}; '
+                  f'impact={impact}; evidence={evidence}; resolution={resolution}'
+              )
+              print(message)
+              print(f'::warning title=Brisbane feed degraded::{message}')
+              summary_path = os.environ.get('GITHUB_STEP_SUMMARY')
+              if summary_path:
+                  with open(summary_path, 'a', encoding='utf-8') as summary:
+                      summary.write('## SUCCESS_WITH_WARNINGS\n')
+                      summary.write(f'- stage: {stage}\n')
+                      summary.write(f'- operation: {operation}\n')
+                      summary.write(f'- impact: {impact}\n')
+                      summary.write(f'- evidence: {evidence}\n')
+                      summary.write(f'- resolution: {resolution}\n')
+
+          def fetch_text(url):
+              request = urllib.request.Request(url, headers={'User-Agent': user_agent})
+              with urllib.request.urlopen(request, timeout=20) as response:
+                  return response.read().decode('utf-8', errors='replace')
+
+          def extract_playability_status(page):
+              match = re.search(r'"playabilityStatus"\s*:\s*\{\s*"status"\s*:\s*"([^"]+)"', page)
+              return match.group(1) if match else None
+
+          def is_live_now(page):
+              return re.search(r'"isLiveNow"\s*:\s*true', page) is not None
+
+          def is_embeddable(page):
+              return re.search(r'"playableInEmbed"\s*:\s*true', page) is not None
+
+          def validate_video(video_id):
+              if not video_id:
+                  return False, 'missing video id'
+              page = fetch_text(f'https://www.youtube.com/watch?v={video_id}')
+              status = extract_playability_status(page)
+              if status != 'OK':
+                  return False, f'playabilityStatus={status!r}'
+              if not is_embeddable(page):
+                  return False, 'playableInEmbed was not true'
+              if not is_live_now(page):
+                  return False, 'isLiveNow was not true'
+              return True, 'live and embeddable'
+
+          def extract_live_video_id(page):
+              patterns = [
+                  r'"liveStreamability"\s*:\s*\{.*?"videoId"\s*:\s*"([A-Za-z0-9_-]{6,})"',
+                  r'"videoDetails"\s*:\s*\{.*?"videoId"\s*:\s*"([A-Za-z0-9_-]{6,})"',
+                  r'"videoId"\s*:\s*"([A-Za-z0-9_-]{6,})".{0,800}?"isLiveNow"\s*:\s*true',
+              ]
+              for pattern in patterns:
+                  match = re.search(pattern, page, flags=re.S)
+                  if match:
+                      return match.group(1)
+              return None
+
+          def read_existing():
+              if not path.exists():
+                  return {}
+              return json.loads(path.read_text(encoding='utf-8'))
+
+          def write_feed(feed):
+              path.parent.mkdir(parents=True, exist_ok=True)
+              old = path.read_text(encoding='utf-8') if path.exists() else ''
+              new = json.dumps(feed, indent=2, ensure_ascii=False) + '\n'
+              if old == new:
+                  print('NO_CHANGE', json.dumps(feed, ensure_ascii=False))
+                  return
+              path.write_text(new, encoding='utf-8')
+              print('UPDATED', json.dumps(feed, ensure_ascii=False))
+
+          existing = read_existing()
+          current_video_id = existing.get('primary_video_id') or existing.get('video_id')
+          existing_fallback_id = existing.get('fallback_video_id') or fallback_video_id
+
+          try:
+              current_ok, current_reason = validate_video(current_video_id)
+          except (TimeoutError, socket.timeout, urllib.error.URLError) as exc:
+              warn(
+                  'Resolve current Brisbane YouTube stream',
+                  'validate stored primary video',
+                  'kept the existing Brisbane feed because YouTube validation could not be completed',
+                  repr(exc),
+                  'retry validation on the next scheduled workflow run'
+              )
+              print('NO_CHANGE', json.dumps(existing, ensure_ascii=False))
+              sys.exit(0)
+
+          if current_ok:
+              feed = {
+                  'kind': 'youtube',
+                  'source': 'Brisbane Live',
+                  'channel_live_url': channel_live_url,
+                  'primary_video_id': current_video_id,
+                  'fallback_video_id': existing_fallback_id,
+                  'status': 'live',
+                  'updated_at': existing.get('updated_at') or int(time.time())
+              }
+              write_feed(feed)
+              sys.exit(0)
+
+          print(f'STORED_PRIMARY_UNUSABLE video_id={current_video_id} reason={current_reason}')
+
+          try:
+              channel_page = fetch_text(channel_live_url)
+              candidate = extract_live_video_id(channel_page)
+              candidate_ok, candidate_reason = validate_video(candidate)
+          except (TimeoutError, socket.timeout, urllib.error.URLError) as exc:
+              candidate = None
+              candidate_ok = False
+              candidate_reason = repr(exc)
+
+          if candidate_ok:
+              feed = {
+                  'kind': 'youtube',
+                  'source': 'Brisbane Live',
+                  'channel_live_url': channel_live_url,
+                  'primary_video_id': candidate,
+                  'fallback_video_id': existing_fallback_id,
+                  'status': 'live',
+                  'replaced_video_id': current_video_id,
+                  'replacement_reason': current_reason,
+                  'updated_at': int(time.time())
+              }
+              write_feed(feed)
+              sys.exit(0)
+
+          warn(
+              'Resolve current Brisbane YouTube stream',
+              'resolve channel live replacement',
+              'Brisbane will stay on the Lourdes Hill fallback until Brisbane Live exposes a valid live stream again',
+              f'stored={current_video_id}; stored_reason={current_reason}; candidate={candidate}; candidate_reason={candidate_reason}',
+              'retry channel live lookup on the next scheduled workflow run'
+          )
+          feed = {
+              'kind': 'youtube',
+              'source': 'Brisbane Live',
+              'channel_live_url': channel_live_url,
+              'primary_video_id': None,
+              'fallback_video_id': existing_fallback_id,
+              'status': 'backup',
+              'previous_primary_video_id': current_video_id,
+              'reason': current_reason,
+              'updated_at': int(time.time())
+          }
+          write_feed(feed)
+          PY
+
+      - name: Commit Brisbane feed update
+        run: |
+          if git diff --quiet -- feeds/brisbane.json; then
+            exit 0
+          fi
+          stream_id=$(python3 - <<'PY'
+          import json
+          feed = json.load(open('feeds/brisbane.json'))
+          print(feed.get('primary_video_id') or feed.get('status') or 'fallback')
+          PY
+          )
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add feeds/brisbane.json
+          git commit -m "Update Brisbane feed alias to ${stream_id}"
+          for attempt in 1 2 3; do
+            if git push; then
+              exit 0
+            fi
+
+            echo "Push attempt ${attempt} failed; rebasing onto the latest main before retrying."
+            git fetch origin main
+            git rebase origin/main
+          done
+
+          echo "::error title=Brisbane feed push failed::Could not push feed update after rebasing onto latest main."
+          exit 1
