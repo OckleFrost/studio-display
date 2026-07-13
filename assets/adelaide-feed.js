@@ -83,6 +83,7 @@
       watchdogStallMs: 45000,
       minRecoveryGapMs: 20000,
       emergencyImageUrl: '../assets/adelaide-fallback.jpg',
+      emergencyPanorama: false,
       videoId: 'adelaide-video',
       fallbackId: 'adelaide-fallback',
       stateName: '__recoveringHlsFeedState'
@@ -150,12 +151,17 @@
       return state.snapshotFailed ? config.emergencyImageUrl : (state.currentSnapshotUrl || config.emergencyImageUrl);
     }
 
+    function updateFallbackPresentation() {
+      fallback.classList.toggle('feed-panorama', Boolean(state.currentPanorama || (state.snapshotFailed && config.emergencyPanorama)));
+    }
+
     function cacheBust(url) {
       const separator = String(url).includes('?') ? '&' : '?';
       return `${url}${separator}t=${Date.now()}`;
     }
 
     function showFallback() {
+      updateFallbackPresentation();
       fallback.src = cacheBust(fallbackUrl());
       fallback.classList.remove('hidden');
       video.classList.add('hidden');
@@ -192,7 +198,7 @@
       state.currentPanorama = feed.panorama;
       state.snapshotFailed = false;
       fallback.src = state.currentSnapshotUrl;
-      fallback.classList.toggle('feed-panorama', Boolean(feed.panorama));
+      updateFallbackPresentation();
 
       if (changed || restartPlayer) {
         startPlayback();
@@ -357,6 +363,7 @@
     fallback.addEventListener('error', () => {
       if (state.snapshotFailed || !config.emergencyImageUrl) return;
       state.snapshotFailed = true;
+      updateFallbackPresentation();
       fallback.src = cacheBust(config.emergencyImageUrl);
     });
     ['loadeddata', 'loadedmetadata', 'canplay', 'canplaythrough', 'playing', 'timeupdate', 'progress', 'seeked'].forEach((eventName) => {

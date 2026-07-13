@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <title>Studio Display - Vertical 2</title>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-<script src="../assets/adelaide-feed.js?v=20260713-panorama-fallbacks"></script>
+<script src="../assets/adelaide-feed.js?v=20260713-panorama-transform-pan"></script>
 <script src="../assets/brisbane-feed.js?v=20260706-brisbane-feed-watchdog"></script>
 <style>
 :root {
@@ -109,14 +109,16 @@ html, body {
 
 .stream img.feed-panorama {
   object-fit: cover;
-  object-position: 0% 50%;
-  transform: scale(1.35);
+  object-position: center center;
+  transform: translateX(10%) scale(1.5);
+  transform-origin: center center;
+  will-change: transform;
   animation: panorama-pan 90s ease-in-out infinite alternate;
 }
 
 @keyframes panorama-pan {
-  from { object-position: 0% 50%; }
-  to { object-position: 100% 50%; }
+  from { transform: translateX(10%) scale(1.5); }
+  to { transform: translateX(-10%) scale(1.5); }
 }
 
 .feed-offline {
@@ -210,6 +212,7 @@ initRecoveringHlsFeed({
   initialStreamUrl: 'https://s128.ipcamlive.com/streams/80i7dkjgqh0y9dgvh/stream.m3u8',
   initialSnapshotUrl: 'https://s128.ipcamlive.com/streams/80i7dkjgqh0y9dgvh/snapshot.jpg',
   emergencyImageUrl: 'https://fremantleports.roundshot.com/cams/793',
+  emergencyPanorama: true,
   scheduledChecksSydney: ['06:55', '13:55'],
   stateName: '__perthFeedState'
 });
