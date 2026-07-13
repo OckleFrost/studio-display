@@ -2,7 +2,7 @@
   "timeZone": "Australia/Sydney",
   "switchCheckMs": 15000,
   "configPollMs": 30000,
-  "childVersion": "20260707-perth-raw-feed",
+  "childVersion": "20260713-panorama-fallbacks",
   "showStatusOverlay": false,
   "schedules": [
     { "days": [1, 2, 3, 4, 5], "start": "09:00", "end": "13:01", "mode": "onAir" },
