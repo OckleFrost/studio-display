@@ -5,7 +5,7 @@
   "primary_video_id": null,
   "fallback_video_id": "I7OY3JC15EE",
   "status": "backup",
-  "previous_primary_video_id": "sCPKGMfHGQA",
-  "reason": "playabilityStatus='UNPLAYABLE'",
-  "updated_at": 1784301693
+  "previous_primary_video_id": null,
+  "reason": "missing video id",
+  "updated_at": 1784306421
 }
