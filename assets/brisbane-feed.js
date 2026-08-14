@@ -53,8 +53,11 @@
       initialVideoId: null,
       fallbackVideoId: DEFAULT_FALLBACK_VIDEO_ID,
       refreshMs: 300000,
-      noPlayMs: 45000,
-      bufferMs: 30000
+      noPlayMs: 90000,
+      bufferMs: 90000,
+      fallbackHoldMs: 300000,
+      recoveryCheckMs: 10000,
+      recoverySuccessesRequired: 3
     }, options || {});
 
     const frame = document.getElementById(config.frameId);
@@ -68,12 +71,18 @@
       noPlayTimer: null,
       bufferTimer: null,
       refreshTimer: null,
-      refreshPromise: null
+      refreshPromise: null,
+      recoveryTimer: null,
+      recoveryInterval: null,
+      recoverySuccesses: 0,
+      recovering: false
     };
 
     function clearTimers() {
       global.clearTimeout(state.noPlayTimer);
       global.clearTimeout(state.bufferTimer);
+      global.clearTimeout(state.recoveryTimer);
+      global.clearInterval(state.recoveryInterval);
     }
 
     function loadVideo(videoId) {
@@ -100,12 +109,49 @@
       state.bufferTimer = global.setTimeout(() => switchToFallback('buffering-timeout'), config.bufferMs);
     }
 
+    function attemptNativeRecovery() {
+      if (!state.player) return;
+      try {
+        if (typeof state.player.playVideo === 'function') state.player.playVideo();
+      } catch (_) {}
+    }
+
+    function beginPrimaryRecovery() {
+      if (!state.usedFallback || state.recovering || !state.primaryVideoId) return;
+      state.recovering = true;
+      state.recoverySuccesses = 0;
+      clearTimers();
+      loadVideo(state.primaryVideoId);
+      armNoPlayTimer();
+      state.recoveryInterval = global.setInterval(() => {
+        if (!state.player || !state.recovering) return;
+        let playerState = null;
+        try { playerState = state.player.getPlayerState(); } catch (_) {}
+        if (playerState === YT.PlayerState.PLAYING) {
+          state.recoverySuccesses += 1;
+          if (state.recoverySuccesses >= config.recoverySuccessesRequired) {
+            state.usedFallback = false;
+            state.recovering = false;
+            clearTimers();
+            delete frame.dataset.fallbackReason;
+          }
+        } else {
+          state.recoverySuccesses = 0;
+        }
+      }, config.recoveryCheckMs);
+    }
+
     function switchToFallback(reason) {
       if (state.usedFallback) return;
       state.usedFallback = true;
+      state.recovering = false;
       frame.dataset.fallbackReason = reason || 'unknown';
-      clearTimers();
+      global.clearInterval(state.recoveryInterval);
+      global.clearTimeout(state.recoveryTimer);
+      global.clearTimeout(state.noPlayTimer);
+      global.clearTimeout(state.bufferTimer);
       loadVideo(state.fallbackVideoId);
+      state.recoveryTimer = global.setTimeout(beginPrimaryRecovery, config.fallbackHoldMs);
     }
 
     function applyFeed(feed) {
@@ -120,8 +166,9 @@
       frame.dataset.fallbackVideoId = nextFallback || '';
       frame.dataset.feedStatus = feed.status || 'unknown';
 
-      if (nextPrimary && (primaryChanged || state.usedFallback)) {
+      if (nextPrimary && primaryChanged && !state.usedFallback) {
         state.usedFallback = false;
+        state.recovering = false;
         delete frame.dataset.fallbackReason;
         clearTimers();
         loadVideo(nextPrimary);
@@ -170,11 +217,12 @@
           },
           onStateChange(event) {
             if (event.data === YT.PlayerState.PLAYING) {
-              clearTimers();
+              if (!state.recovering && !state.usedFallback) clearTimers();
               return;
             }
 
             if (event.data === YT.PlayerState.BUFFERING) {
+              attemptNativeRecovery();
               armBufferTimer();
               return;
             }
