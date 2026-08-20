@@ -3,9 +3,9 @@
   "kind": "image",
   "streamid": null,
   "streamavailable": "1",
-  "status": "reported_stream_unusable_city_screenshot",
-  "image_url": "https://raw.githubusercontent.com/OckleFrost/studio-display/main/assets/adelaide-fallback.jpg?captured=1787213921",
-  "snapshot_url": "https://raw.githubusercontent.com/OckleFrost/studio-display/main/assets/adelaide-fallback.jpg?captured=1787213921",
-  "fallback_source": "https://www.cityofadelaide.com.au/webcams/town-hall-south/",
-  "captured_at": 1787213921
+  "status": "upstream_unavailable",
+  "image_url": "/studio-display/assets/adelaide-offline.svg",
+  "snapshot_url": "/studio-display/assets/adelaide-offline.svg",
+  "fallback_source": null,
+  "captured_at": null
 }
