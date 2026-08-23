@@ -1,7 +1,11 @@
 {
   "alias": "bsyc1080",
-  "kind": "hls",
-  "streamid": "7fw5kywa4z7dglinu",
-  "stream_url": "https://s127.ipcamlive.com/streams/7fw5kywa4z7dglinu/stream.m3u8",
-  "snapshot_url": "https://s127.ipcamlive.com/streams/7fw5kywa4z7dglinu/snapshot.jpg"
+  "kind": "image",
+  "streamid": null,
+  "streamavailable": "0",
+  "status": "upstream_unavailable",
+  "image_url": "/studio-display/assets/adelaide-offline.svg",
+  "snapshot_url": "/studio-display/assets/adelaide-offline.svg",
+  "fallback_source": null,
+  "captured_at": null
 }
