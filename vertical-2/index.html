@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <title>Studio Display - Vertical 2</title>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-<script src="../assets/adelaide-feed.js?v=20260713-panorama-transform-pan"></script>
+<script src="../assets/adelaide-feed.js?v=20260825-preload-swap"></script>
 <script src="../assets/brisbane-feed.js?v=20260706-brisbane-feed-watchdog"></script>
 <style>
 :root {
@@ -176,7 +176,7 @@ html, body {
     <div class="stream perth">
       <div class="label">Perth</div>
       <video id="perth-video" autoplay muted playsinline preload="auto"></video>
-      <img id="perth-fallback" class="hidden" src="https://s128.ipcamlive.com/streams/80i7dkjgqh0y9dgvh/snapshot.jpg" alt="Perth live snapshot" />
+      <img id="perth-fallback" class="hidden" src="https://fremantleports.roundshot.com/cams/793" alt="Perth harbour camera" />
     </div>
 
   </div>
@@ -208,9 +208,12 @@ initRecoveringHlsFeed({
   feedUrl: 'https://api.github.com/repos/OckleFrost/studio-display/contents/feeds/perth.json?ref=main',
   feedAccept: 'application/vnd.github.raw+json',
   periodicFeedRefreshMs: 30000,
-  initialStreamId: '80i7dkjgqh0y9dgvh',
-  initialStreamUrl: 'https://s128.ipcamlive.com/streams/80i7dkjgqh0y9dgvh/stream.m3u8',
-  initialSnapshotUrl: 'https://s128.ipcamlive.com/streams/80i7dkjgqh0y9dgvh/snapshot.jpg',
+  initialKind: 'image',
+  initialStreamId: null,
+  initialStreamUrl: null,
+  initialSnapshotUrl: 'https://fremantleports.roundshot.com/cams/793',
+  initialImageUrl: 'https://fremantleports.roundshot.com/cams/793',
+  initialPanorama: true,
   emergencyImageUrl: 'https://fremantleports.roundshot.com/cams/793',
   emergencyPanorama: true,
   scheduledChecksSydney: ['06:55', '13:55'],

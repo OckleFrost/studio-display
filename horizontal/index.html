@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Studio Display - Horizontal</title>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-<script src="../assets/adelaide-feed.js?v=20260713-panorama-transform-pan"></script>
+<script src="../assets/adelaide-feed.js?v=20260825-preload-swap"></script>
 <script src="../assets/brisbane-feed.js?v=20260706-brisbane-feed-watchdog"></script>
 <style>
 :root {
@@ -174,7 +174,7 @@ body { color: #fff; }
   <section class="tile perth" data-type="ipcam" data-city="Perth">
     <div class="label">Perth</div>
     <video id="perth-video" class="frame" autoplay muted playsinline preload="auto"></video>
-    <img id="perth-fallback" class="frame hidden" src="https://s127.ipcamlive.com/streams/7fgx15qop2hnlebwc/snapshot.jpg" alt="Perth live snapshot" />
+    <img id="perth-fallback" class="frame hidden" src="https://fremantleports.roundshot.com/cams/793" alt="Perth harbour camera" />
   </section>
 
   <section class="tile adelaide" data-type="hls" data-city="Adelaide">
@@ -230,11 +230,15 @@ initAdelaideFeed({
 initRecoveringHlsFeed({
   videoId: 'perth-video',
   fallbackId: 'perth-fallback',
-  feedUrl: '../feeds/perth.json',
+  feedUrl: 'https://api.github.com/repos/OckleFrost/studio-display/contents/feeds/perth.json?ref=main',
+  feedAccept: 'application/vnd.github.raw+json',
   periodicFeedRefreshMs: 30000,
-  initialStreamId: '7fgx15qop2hnlebwc',
-  initialStreamUrl: 'https://s127.ipcamlive.com/streams/7fgx15qop2hnlebwc/stream.m3u8',
-  initialSnapshotUrl: 'https://s127.ipcamlive.com/streams/7fgx15qop2hnlebwc/snapshot.jpg',
+  initialKind: 'image',
+  initialStreamId: null,
+  initialStreamUrl: null,
+  initialSnapshotUrl: 'https://fremantleports.roundshot.com/cams/793',
+  initialImageUrl: 'https://fremantleports.roundshot.com/cams/793',
+  initialPanorama: true,
   emergencyImageUrl: 'https://fremantleports.roundshot.com/cams/793',
   emergencyPanorama: true,
   scheduledChecksSydney: ['06:55', '13:55'],

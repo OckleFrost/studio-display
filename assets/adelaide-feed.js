@@ -48,6 +48,10 @@
     const snapshotUrl = feed.snapshot_url || feed.snapshotUrl;
     const streamId = feed.streamid || feed.streamId;
     const panorama = Boolean(feed.panorama || feed.isPanorama || feed.presentation === 'panorama');
+    const refreshSeconds = Number(feed.refresh_seconds ?? feed.refreshSeconds);
+    const refreshMs = Number.isFinite(refreshSeconds) && refreshSeconds >= 15
+      ? Math.round(refreshSeconds * 1000)
+      : null;
 
     if (kind === 'image') {
       if (!imageUrl && !snapshotUrl) return null;
@@ -57,7 +61,8 @@
         streamUrl: null,
         snapshotUrl: imageUrl || snapshotUrl,
         imageUrl: imageUrl || snapshotUrl,
-        panorama
+        panorama,
+        refreshMs
       };
     }
 
@@ -69,7 +74,8 @@
       streamUrl,
       snapshotUrl,
       imageUrl: null,
-      panorama: false
+      panorama: false,
+      refreshMs
     };
   }
 
@@ -101,12 +107,16 @@
       currentSnapshotUrl: config.initialSnapshotUrl,
       currentImageUrl: config.initialImageUrl || null,
       currentPanorama: Boolean(config.initialPanorama),
+      currentFallbackRefreshMs: config.fallbackRefreshMs,
       snapshotFailed: false,
       hls: null,
       fallbackIntervalId: null,
       periodicRefreshIntervalId: null,
       scheduledRefreshTimeoutId: null,
       watchdogIntervalId: null,
+      fallbackIntervalMs: null,
+      fallbackLoad: null,
+      fallbackLoadToken: 0,
       refreshPromise: null,
       lastProgressAt: Date.now(),
       lastCurrentTime: 0,
@@ -125,6 +135,7 @@
       if (!state.fallbackIntervalId) return;
       global.clearInterval(state.fallbackIntervalId);
       state.fallbackIntervalId = null;
+      state.fallbackIntervalMs = null;
     }
 
     function stopWatchdog() {
@@ -160,11 +171,71 @@
       return `${url}${separator}t=${Date.now()}`;
     }
 
-    function showFallback() {
-      updateFallbackPresentation();
-      fallback.src = cacheBust(fallbackUrl());
+    function revealFallback() {
       fallback.classList.remove('hidden');
       video.classList.add('hidden');
+    }
+
+    function preloadFallback({ reveal = true } = {}) {
+      const sourceUrl = fallbackUrl();
+      if (!sourceUrl) return Promise.resolve(false);
+
+      if (state.fallbackLoad && state.fallbackLoad.sourceUrl === sourceUrl) {
+        state.fallbackLoad.reveal = state.fallbackLoad.reveal || reveal;
+        return state.fallbackLoad.promise;
+      }
+
+      if (state.fallbackLoad) {
+        state.fallbackLoad.resolve(false);
+      }
+
+      const token = ++state.fallbackLoadToken;
+      const candidateUrl = cacheBust(sourceUrl);
+      const image = new global.Image();
+      const load = {
+        sourceUrl,
+        candidateUrl,
+        reveal,
+        resolve: null,
+        promise: null
+      };
+      load.promise = new Promise((resolve) => {
+        load.resolve = resolve;
+      });
+      state.fallbackLoad = load;
+
+      image.onload = () => {
+        if (token !== state.fallbackLoadToken || state.fallbackLoad !== load) {
+          load.resolve(false);
+          return;
+        }
+
+        state.fallbackLoad = null;
+        fallback.src = candidateUrl;
+        updateFallbackPresentation();
+        if (load.reveal) revealFallback();
+        load.resolve(true);
+      };
+      image.onerror = () => {
+        if (token !== state.fallbackLoadToken || state.fallbackLoad !== load) {
+          load.resolve(false);
+          return;
+        }
+
+        state.fallbackLoad = null;
+        if (!state.snapshotFailed && config.emergencyImageUrl && sourceUrl !== config.emergencyImageUrl) {
+          state.snapshotFailed = true;
+          preloadFallback({ reveal: load.reveal }).then(load.resolve);
+          return;
+        }
+        load.resolve(false);
+      };
+      image.src = candidateUrl;
+      return load.promise;
+    }
+
+    function showFallback() {
+      return preloadFallback({ reveal: true });
     }
 
     function hideFallback() {
@@ -174,10 +245,13 @@
 
     function startFallbackRefresh() {
       showFallback();
-      if (state.fallbackIntervalId) return;
+      const refreshMs = Math.max(15000, Number(state.currentFallbackRefreshMs || config.fallbackRefreshMs));
+      if (state.fallbackIntervalId && state.fallbackIntervalMs === refreshMs) return;
+      stopFallbackRefresh();
+      state.fallbackIntervalMs = refreshMs;
       state.fallbackIntervalId = global.setInterval(() => {
-        fallback.src = cacheBust(fallbackUrl());
-      }, config.fallbackRefreshMs);
+        showFallback();
+      }, refreshMs);
     }
 
     function applyFeed(feed, restartPlayer) {
@@ -187,7 +261,8 @@
         feed.streamUrl !== state.currentStreamUrl ||
         feed.snapshotUrl !== state.currentSnapshotUrl ||
         feed.imageUrl !== state.currentImageUrl ||
-        feed.panorama !== state.currentPanorama
+        feed.panorama !== state.currentPanorama ||
+        (feed.refreshMs || config.fallbackRefreshMs) !== state.currentFallbackRefreshMs
       );
 
       state.currentKind = feed.kind;
@@ -196,9 +271,8 @@
       state.currentSnapshotUrl = feed.snapshotUrl;
       state.currentImageUrl = feed.imageUrl;
       state.currentPanorama = feed.panorama;
+      state.currentFallbackRefreshMs = feed.refreshMs || config.fallbackRefreshMs;
       state.snapshotFailed = false;
-      fallback.src = state.currentSnapshotUrl;
-      updateFallbackPresentation();
 
       if (changed || restartPlayer) {
         startPlayback();
@@ -247,7 +321,7 @@
       if (now - state.lastRecoveryAt < config.minRecoveryGapMs) return;
       state.lastRecoveryAt = now;
       refreshFeed({ restartPlayer: true }).then((changed) => {
-        if (!changed) startPlayback();
+        if (!changed && state.currentKind !== 'image') startPlayback();
       });
     }
 
@@ -267,7 +341,6 @@
     function startPlayback() {
       stopFallbackRefresh();
       stopHls();
-      hideFallback();
       state.lastPlaybackStartAt = Date.now();
       state.lastProgressAt = state.lastPlaybackStartAt;
       state.lastCurrentTime = 0;
@@ -312,6 +385,7 @@
         const now = Date.now();
 
         if (!fallback.classList.contains('hidden')) {
+          if (state.currentKind === 'image') return;
           if (now - state.lastRecoveryAt >= config.watchdogStallMs) {
             recoverPlayback();
           }
@@ -363,8 +437,7 @@
     fallback.addEventListener('error', () => {
       if (state.snapshotFailed || !config.emergencyImageUrl) return;
       state.snapshotFailed = true;
-      updateFallbackPresentation();
-      fallback.src = cacheBust(config.emergencyImageUrl);
+      preloadFallback({ reveal: !fallback.classList.contains('hidden') });
     });
     ['loadeddata', 'loadedmetadata', 'canplay', 'canplaythrough', 'playing', 'timeupdate', 'progress', 'seeked'].forEach((eventName) => {
       video.addEventListener(eventName, () => noteProgress(true));
@@ -386,7 +459,8 @@
         streamUrl: state.currentStreamUrl,
         snapshotUrl: state.currentSnapshotUrl,
         imageUrl: state.currentImageUrl,
-        panorama: state.currentPanorama
+        panorama: state.currentPanorama,
+        fallbackRefreshMs: state.currentFallbackRefreshMs
       })
     };
 
