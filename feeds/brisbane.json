@@ -4,6 +4,9 @@
   "channel_live_url": "https://www.youtube.com/@BrisbaneLivestream/live",
   "primary_video_id": "o1LRcS28T2M",
   "fallback_video_id": "I7OY3JC15EE",
-  "status": "live",
-  "updated_at": 1787653058
+  "status": "inferred_live_from_channel",
+  "replaced_video_id": "o1LRcS28T2M",
+  "replacement_reason": "playabilityStatus='LOGIN_REQUIRED'",
+  "validation_note": "playabilityStatus='LOGIN_REQUIRED'",
+  "updated_at": 1787657232
 }
