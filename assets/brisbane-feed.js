@@ -250,5 +250,200 @@
     return state;
   }
 
+  function initYouTubeLiveEdge(options) {
+    const config = Object.assign({
+      frameId: null,
+      videoId: null,
+      checkMs: 30000,
+      maxLagSeconds: 120,
+      noProgressMs: 90000,
+      seekOffsetSeconds: 3,
+      correctionCooldownMs: 15000,
+      recoveryGraceMs: 15000,
+      hardRecoveryCooldownMs: 120000,
+      metadataRetryMs: 3000,
+      stateName: '__youtubeLiveEdgeState'
+    }, options || {});
+
+    let frame = document.getElementById(config.frameId);
+    if (!frame || !config.videoId) return null;
+
+    const state = {
+      player: null,
+      checkTimer: null,
+      verificationTimer: null,
+      metadataTimer: null,
+      lastCurrentTime: 0,
+      lastProgressAt: Date.now(),
+      lastCorrectionAt: 0,
+      lastHardRecoveryAt: 0,
+      correctionCount: 0,
+      hardRecoveryCount: 0,
+      lastReason: null,
+      lastHardRecoveryReason: null,
+      lastMetrics: null
+    };
+
+    function readMetrics() {
+      if (!state.player) return null;
+      try {
+        const currentTime = Number(state.player.getCurrentTime() || 0);
+        const duration = Number(state.player.getDuration() || 0);
+        const playerState = Number(state.player.getPlayerState());
+        return {
+          currentTime,
+          duration,
+          lagSeconds: duration > 0 ? duration - currentTime : null,
+          playerState
+        };
+      } catch (_) {
+        return null;
+      }
+    }
+
+    function hardRecover(reason) {
+      const now = Date.now();
+      if (now - state.lastHardRecoveryAt < config.hardRecoveryCooldownMs) return false;
+
+      state.lastHardRecoveryAt = now;
+      state.hardRecoveryCount += 1;
+      state.lastReason = reason || 'hard-recovery';
+      state.lastHardRecoveryReason = state.lastReason;
+      global.clearTimeout(state.verificationTimer);
+      global.clearTimeout(state.metadataTimer);
+
+      const replacement = frame.cloneNode(false);
+      const url = new URL(buildEmbedUrl(config.videoId));
+      url.searchParams.set('live_recovery', String(now));
+      replacement.src = url.toString();
+      replacement.dataset.liveEdgeReason = state.lastReason;
+      frame.replaceWith(replacement);
+      frame = replacement;
+      state.player = null;
+      state.lastCurrentTime = 0;
+      state.lastProgressAt = now;
+      global.setTimeout(createPlayer, 0);
+      return true;
+    }
+
+    function verifyCorrection(reason) {
+      global.clearTimeout(state.verificationTimer);
+      state.verificationTimer = global.setTimeout(() => {
+        const metrics = readMetrics();
+        if (!metrics) {
+          hardRecover(`${reason}-unreadable`);
+          return;
+        }
+
+        const stillBehind = metrics.lagSeconds !== null && metrics.lagSeconds > config.maxLagSeconds;
+        const notPlaying = global.YT && metrics.playerState !== YT.PlayerState.PLAYING;
+        if (stillBehind || notPlaying) hardRecover(`${reason}-failed`);
+      }, config.recoveryGraceMs);
+    }
+
+    function seekToLive(reason, force) {
+      const now = Date.now();
+      if (!state.player) return false;
+      if (!force && now - state.lastCorrectionAt < config.correctionCooldownMs) return false;
+
+      const metrics = readMetrics();
+      if (!metrics || metrics.duration <= 0) {
+        try {
+          if (typeof state.player.playVideo === 'function') state.player.playVideo();
+        } catch (_) {}
+        global.clearTimeout(state.metadataTimer);
+        state.metadataTimer = global.setTimeout(
+          () => seekToLive(`${reason}-metadata-ready`, true),
+          config.metadataRetryMs
+        );
+        return true;
+      }
+
+      try {
+        if (typeof state.player.seekTo === 'function') {
+          state.player.seekTo(Math.max(0, metrics.duration - config.seekOffsetSeconds), true);
+        }
+        if (typeof state.player.playVideo === 'function') state.player.playVideo();
+      } catch (_) {
+        return hardRecover(`${reason}-exception`);
+      }
+
+      state.lastCorrectionAt = now;
+      state.correctionCount += 1;
+      state.lastReason = reason || 'seek-live';
+      frame.dataset.liveEdgeReason = state.lastReason;
+      verifyCorrection(state.lastReason);
+      return true;
+    }
+
+    function checkNow() {
+      const now = Date.now();
+      const metrics = readMetrics();
+      state.lastMetrics = metrics;
+      if (!metrics) return false;
+
+      if (metrics.currentTime > state.lastCurrentTime + 0.25) {
+        state.lastProgressAt = now;
+      }
+      state.lastCurrentTime = metrics.currentTime;
+
+      if (metrics.lagSeconds !== null && metrics.lagSeconds > config.maxLagSeconds) {
+        return seekToLive('behind-live-edge', false);
+      }
+
+      if (now - state.lastProgressAt >= config.noProgressMs) {
+        return seekToLive('playback-stalled', false);
+      }
+
+      if (global.YT && metrics.playerState === YT.PlayerState.ENDED) {
+        return hardRecover('stream-ended');
+      }
+      return false;
+    }
+
+    function createPlayer() {
+      if (!global.YT || !YT.Player || state.player) return;
+      state.player = new YT.Player(frame, {
+        events: {
+          onReady() {
+            state.lastProgressAt = Date.now();
+            seekToLive('player-ready', true);
+          },
+          onStateChange(event) {
+            if (event.data === YT.PlayerState.PLAYING) checkNow();
+            if (event.data === YT.PlayerState.ENDED) hardRecover('stream-ended');
+          },
+          onError: () => hardRecover('youtube-error')
+        }
+      });
+    }
+
+    frame.dataset.liveVideoId = config.videoId;
+    const initialUrl = buildEmbedUrl(config.videoId);
+    if (frame.src !== initialUrl) frame.src = initialUrl;
+
+    const controller = {
+      checkNow,
+      jumpToLive: () => seekToLive('manual-live-edge', true),
+      getState: () => ({
+        correctionCount: state.correctionCount,
+        hardRecoveryCount: state.hardRecoveryCount,
+        lastReason: state.lastReason,
+        lastHardRecoveryReason: state.lastHardRecoveryReason,
+        metrics: readMetrics()
+      })
+    };
+    global[config.stateName] = controller;
+
+    if (global.YT && YT.Player) {
+      createPlayer();
+    } else {
+      pendingPlayerInitializers.push(createPlayer);
+    }
+    state.checkTimer = global.setInterval(checkNow, config.checkMs);
+    return controller;
+  }
+
   global.initBrisbaneFeed = initBrisbaneFeed;
+  global.initYouTubeLiveEdge = initYouTubeLiveEdge;
 })(window);

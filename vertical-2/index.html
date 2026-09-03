@@ -5,7 +5,7 @@
 <title>Studio Display - Vertical 2</title>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <script src="../assets/adelaide-feed.js?v=20260904-perth-fast-fallback"></script>
-<script src="../assets/brisbane-feed.js?v=20260706-brisbane-feed-watchdog"></script>
+<script src="../assets/brisbane-feed.js?v=20260904-sydney-live-edge"></script>
 <style>
 :root {
   --bg: #000;
@@ -148,7 +148,7 @@ html, body {
 
     <div class="stream sydney">
       <div class="label">Sydney</div>
-      <iframe src="https://www.youtube.com/embed/5uZa3-RMFos?autoplay=1&mute=1&controls=0&modestbranding=1" allow="autoplay"></iframe>
+      <iframe id="sydney-frame" src="https://www.youtube.com/embed/5uZa3-RMFos?autoplay=1&mute=1&controls=0&modestbranding=1&playsinline=1&rel=0&enablejsapi=1" allow="autoplay; encrypted-media; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin"></iframe>
     </div>
 
     <div class="stream melbourne">
@@ -184,6 +184,12 @@ html, body {
 
 <script src="https://www.youtube.com/iframe_api"></script>
 <script>
+initYouTubeLiveEdge({
+  frameId: 'sydney-frame',
+  videoId: '5uZa3-RMFos',
+  stateName: '__sydneyLiveEdgeState'
+});
+
 initBrisbaneFeed({
   frameId: 'brisbane-frame',
   initialVideoId: 'sCPKGMfHGQA',

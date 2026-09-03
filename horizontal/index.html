@@ -6,7 +6,7 @@
 <title>Studio Display - Horizontal</title>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <script src="../assets/adelaide-feed.js?v=20260904-perth-fast-fallback"></script>
-<script src="../assets/brisbane-feed.js?v=20260706-brisbane-feed-watchdog"></script>
+<script src="../assets/brisbane-feed.js?v=20260904-sydney-live-edge"></script>
 <style>
 :root {
   --bg: #000;
@@ -168,7 +168,7 @@ body { color: #fff; }
 <div id="wall">
   <section class="tile hero sydney" data-type="youtube" data-city="Sydney">
     <div class="label">Sydney</div>
-    <iframe class="frame" src="https://www.youtube.com/embed/5uZa3-RMFos?autoplay=1&mute=1&controls=0&modestbranding=1&playsinline=1&rel=0" allow="autoplay; encrypted-media; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+    <iframe id="sydney-frame" class="frame" src="https://www.youtube.com/embed/5uZa3-RMFos?autoplay=1&mute=1&controls=0&modestbranding=1&playsinline=1&rel=0&enablejsapi=1" allow="autoplay; encrypted-media; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin"></iframe>
   </section>
 
   <section class="tile perth" data-type="ipcam" data-city="Perth">
@@ -209,6 +209,12 @@ body { color: #fff; }
 
 <script src="https://www.youtube.com/iframe_api"></script>
 <script>
+initYouTubeLiveEdge({
+  frameId: 'sydney-frame',
+  videoId: '5uZa3-RMFos',
+  stateName: '__sydneyLiveEdgeState'
+});
+
 initBrisbaneFeed({
   frameId: 'brisbane-frame',
   initialVideoId: 'o1LRcS28T2M',
