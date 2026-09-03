@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <title>Studio Display - Vertical 2</title>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-<script src="../assets/adelaide-feed.js?v=20260825-preload-swap"></script>
+<script src="../assets/adelaide-feed.js?v=20260904-perth-fast-fallback"></script>
 <script src="../assets/brisbane-feed.js?v=20260706-brisbane-feed-watchdog"></script>
 <style>
 :root {
@@ -175,8 +175,8 @@ html, body {
 
     <div class="stream perth">
       <div class="label">Perth</div>
-      <video id="perth-video" autoplay muted playsinline preload="auto"></video>
-      <img id="perth-fallback" class="hidden" src="https://fremantleports.roundshot.com/cams/793" alt="Perth harbour camera" />
+      <video id="perth-video" class="hidden" autoplay muted playsinline preload="auto"></video>
+      <img id="perth-fallback" class="feed-panorama" src="https://fremantleports.roundshot.com/cams/793" alt="Perth harbour camera" />
     </div>
 
   </div>
@@ -216,6 +216,7 @@ initRecoveringHlsFeed({
   initialPanorama: true,
   emergencyImageUrl: 'https://fremantleports.roundshot.com/cams/793',
   emergencyPanorama: true,
+  keepFallbackVisibleUntilPlaying: true,
   scheduledChecksSydney: ['06:55', '13:55'],
   stateName: '__perthFeedState'
 });

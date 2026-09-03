@@ -90,6 +90,7 @@
       minRecoveryGapMs: 20000,
       emergencyImageUrl: '../assets/adelaide-fallback.jpg',
       emergencyPanorama: false,
+      keepFallbackVisibleUntilPlaying: false,
       videoId: 'adelaide-video',
       fallbackId: 'adelaide-fallback',
       stateName: '__recoveringHlsFeedState'
@@ -354,6 +355,11 @@
       if (state.currentKind === 'image') {
         startFallbackRefresh();
         return;
+      }
+
+      if (config.keepFallbackVisibleUntilPlaying) {
+        revealFallback();
+        startFallbackRefresh();
       }
 
       if (video.canPlayType('application/vnd.apple.mpegurl')) {
