@@ -1,11 +1,7 @@
 {
   "alias": "skimoveable",
-  "kind": "image",
-  "status": "backup",
-  "reason": "Previous Perth HLS became unavailable; IPCamLive reported streamid=7fqj0uisd6un5ob4j, but its HLS playlist could not be verified after retries: URLError(TimeoutError('_ssl.c:983: The handshake operation timed out')); using Fremantle Ports Victoria Quay Roundshot backup",
-  "image_url": "https://fremantleports.roundshot.com/cams/793",
-  "source": "Fremantle Ports Victoria Quay harbourcam",
-  "source_url": "https://fremantleports.roundshot.com/camera1/",
-  "refresh_seconds": 300,
-  "panorama": true
+  "kind": "hls",
+  "streamid": "7fqj0uisd6un5ob4j",
+  "stream_url": "https://s127.ipcamlive.com/streams/7fqj0uisd6un5ob4j/stream.m3u8",
+  "snapshot_url": "https://s127.ipcamlive.com/streams/7fqj0uisd6un5ob4j/snapshot.jpg"
 }
