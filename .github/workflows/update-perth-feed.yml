@@ -31,7 +31,7 @@ jobs:
           import urllib.request
           from pathlib import Path
 
-          alias = 'skimoveable'
+          alias = 'skinorth'
           endpoint = 'https://www.ipcamlive.com/ajax/getcamerastreamstate.php?'
           path = Path('feeds/perth.json')
           url = endpoint + urllib.parse.urlencode({'cameraalias': alias})
